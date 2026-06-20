@@ -1,6 +1,6 @@
 {
   "name": "pi-gitbox",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Pi extension that impersonates gitignored paths to reduce secrets exposure.",
   "keywords": [
     "pi",
@@ -32,7 +32,7 @@
     "@earendil-works/pi-tui": "*"
   },
   "devDependencies": {
-    "@types/node": "^25.9.3",
+    "@types/node": "^26.0.0",
     "@types/shell-quote": "^1.7.5",
     "prettier-plugin-organize-imports": "^4.3.0"
   },
