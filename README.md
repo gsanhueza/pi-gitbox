@@ -113,9 +113,9 @@ Set `bypassPaths: true` to skip this check entirely.
 
 ## How It Works
 
-1. **Session Start** — On `session_start`, the extension verifies that `git` is available and checks if the current directory is a git repository
+1. **Session Start** — On `session_start`, the extension checks whether the current directory is a git repository with `git` available
 2. **Gitignored Path Detection** — Uses git-specific commands to discover all gitignored files and directories
-3. **Gitbox Creation** — Creates a private directory at `~/.pi/agent/gitbox/<project-name>` and mirrors gitignored paths into it: files get placeholder content (`{}` for `.json` and ` ` (empty space) for others)
+3. **Gitbox Creation** — If the directory is a git repository, creates a private directory at `~/.pi/agent/gitbox/<project-name>` and mirrors gitignored paths into it: files get placeholder content (`{}` for `.json` and ` ` (empty space) for others)
 4. **Path Mapping** — Builds a mapper from original absolute paths to their impersonated counterparts
 5. **Event Interception** — On every `tool_call` event:
    - **Bash commands** — Extracts paths from the command using `shell-quote`, checks directory restrictions, then rewrites paths to their impersonated versions

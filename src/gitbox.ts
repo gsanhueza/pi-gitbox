@@ -18,14 +18,14 @@ export class Gitbox {
   async initialize(ctx: ExtensionContext) {
     await this.verifySettings(ctx);
 
-    if (!Detector.isGitAvailable()) {
-      await this.setStatus(ctx);
-      return;
+    // Only create the gitbox folder if it makes sense
+    const status = await this.getStatus();
+    if (status === Status.AVAILABLE || status === Status.ENABLED) {
+      await this.impersonator.initialize(ctx);
+      await this.getOrCreate(ctx);
     }
 
-    await this.impersonator.initialize(ctx);
-    await this.getOrCreate(ctx);
-    await this.setStatus(ctx);
+    await Renderer.setStatus(ctx, status);
   }
 
   async shutdown(ctx: ExtensionContext) {
@@ -165,16 +165,5 @@ export class Gitbox {
     if (paths.length === 0) return Status.AVAILABLE;
 
     return Status.ENABLED;
-  }
-
-  /**
-   * Sets the current status in the status bar.
-   * No-op if the settings prevent it.
-   *
-   * @param ctx The extension context
-   */
-  async setStatus(ctx: ExtensionContext) {
-    const status = await this.getStatus();
-    await Renderer.setStatus(ctx, status);
   }
 }

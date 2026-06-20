@@ -100,8 +100,8 @@ export class CommandManager {
     const key: string = Object.values(Options).find((o) => o === id)!;
     await settings.setConfig({ [key]: newValue === "on" });
 
-    // Update the status bar with the new status
-    await this.gitbox.setStatus(ctx);
+    // Re-initialize to pick up the new configuration
+    await this.gitbox.initialize(ctx);
   }
 
   /**
