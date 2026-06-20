@@ -1,0 +1,131 @@
+import { ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { execSync } from "child_process";
+import { access } from "fs/promises";
+import { homedir } from "node:os";
+import { resolve, sep } from "node:path";
+
+export class Detector {
+  /**
+   * Determines if the user has `git` as a usable command
+   *
+   * @returns True if git exists
+   */
+  static isGitAvailable(): boolean {
+    try {
+      execSync("git -v", { stdio: "pipe" });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Determines if the current working directory is a git repository
+   * @returns True if it's a git repo
+   */
+  static isGitProject(): boolean {
+    try {
+      execSync("git rev-parse --is-inside-work-tree", { stdio: "pipe" });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Returns all gitignored files
+   *
+   * @returns Relative paths for files
+   */
+  static getGitignoredFiles = () => {
+    const paths = Detector.getGitignoredPaths();
+
+    return paths.filter((path) => !path.endsWith("/"));
+  };
+
+  /**
+   * Returns all gitignored directories
+   *
+   * @returns Relative paths for directories
+   */
+  static getGitignoredDirectories = () => {
+    const paths = this.getGitignoredPaths();
+
+    return paths.filter((path) => path.endsWith("/"));
+  };
+
+  /**
+   * Runs the git command to get all git-ignored paths (both files and directories).
+   * Returns an array of paths that are ignored by git.
+   *
+   * @returns Array of git-ignored paths (relative to repo root)
+   */
+  private static getGitignoredPaths(): string[] {
+    try {
+      const command =
+        "git ls-files --directory --no-empty-directory --others --ignored --exclude-standard";
+      const output = execSync(command, {
+        encoding: "utf-8",
+        stdio: ["pipe", "pipe", "ignore"],
+      });
+      const lines = output
+        .trim()
+        .split("\n")
+        .filter((line) => line.length > 0);
+      return lines;
+    } catch (error) {
+      // Silently ignore if not a git repository
+      return [];
+    }
+  }
+
+  /**
+   * Checks if a path exists
+   *
+   * @param path The path to check
+   * @returns True if path exists
+   */
+  static async pathExists(path: string): Promise<boolean> {
+    try {
+      await access(path);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Checks if a path is contained within any of the allowed directories.
+   * The check is recursive: if `/a` is allowed, then `/a/b/c` also passes.
+   *
+   * @param dirs Allowed directories
+   * @param path The path to check (will be resolved relative to cwd)
+   * @param ctx The extension context
+   * @returns True if the path is within at least one allowed directory
+   */
+  static isPathAllowed(
+    dirs: string[],
+    path: string,
+    ctx: ExtensionContext,
+  ): boolean {
+    // Expand ~ to home directory before resolving
+    const normalizedPath = Detector.normalizePath(path);
+    const absPath = resolve(ctx.cwd, normalizedPath);
+    const absDirs = dirs.map((dir) =>
+      resolve(ctx.cwd, Detector.normalizePath(dir)),
+    );
+
+    return absDirs.some(
+      (dir) => absPath === dir || absPath.startsWith(dir + sep),
+    );
+  }
+
+  /**
+   * Normalizes the path when it comes with a tilde (representing HOME)
+   * @param path The path
+   * @returns A normalized path
+   */
+  private static normalizePath(path: string): string {
+    return path.replace(/^~\//g, homedir() + sep);
+  }
+}

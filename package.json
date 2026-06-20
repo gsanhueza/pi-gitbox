@@ -1,0 +1,42 @@
+{
+  "name": "pi-gitbox",
+  "version": "0.1.0",
+  "description": "Pi extension that impersonates gitignored paths to reduce secrets exposure.",
+  "keywords": [
+    "pi",
+    "pi-package",
+    "pi-extension"
+  ],
+  "author": "Gabriel Sanhueza",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gsanhueza/pi-gitbox.git"
+  },
+  "homepage": "https://github.com/gsanhueza/pi-gitbox#readme",
+  "bugs": {
+    "url": "https://github.com/gsanhueza/pi-gitbox/issues"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "prettier": {
+    "plugins": [
+      "prettier-plugin-organize-imports"
+    ]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.3",
+    "@types/shell-quote": "^1.7.5",
+    "prettier-plugin-organize-imports": "^4.3.0"
+  },
+  "dependencies": {
+    "shell-quote": "^1.8.4"
+  }
+}
