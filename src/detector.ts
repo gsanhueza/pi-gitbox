@@ -4,13 +4,13 @@ import { access } from "fs/promises";
 import { homedir } from "node:os";
 import { resolve, sep } from "node:path";
 
-export class Detector {
+export const Detector = new (class {
   /**
    * Determines if the user has `git` as a usable command
    *
    * @returns True if git exists
    */
-  static isGitAvailable(): boolean {
+  isGitAvailable(): boolean {
     try {
       execSync("git -v", { stdio: "pipe" });
       return true;
@@ -23,7 +23,7 @@ export class Detector {
    * Determines if the current working directory is a git repository
    * @returns True if it's a git repo
    */
-  static isGitProject(): boolean {
+  isGitProject(): boolean {
     try {
       execSync("git rev-parse --is-inside-work-tree", { stdio: "pipe" });
       return true;
@@ -37,8 +37,8 @@ export class Detector {
    *
    * @returns Relative paths for files
    */
-  static getGitignoredFiles = () => {
-    const paths = Detector.getGitignoredPaths();
+  getGitignoredFiles = () => {
+    const paths = this.getGitignoredPaths();
 
     return paths.filter((path) => !path.endsWith("/"));
   };
@@ -48,7 +48,7 @@ export class Detector {
    *
    * @returns Relative paths for directories
    */
-  static getGitignoredDirectories = () => {
+  getGitignoredDirectories = () => {
     const paths = this.getGitignoredPaths();
 
     return paths.filter((path) => path.endsWith("/"));
@@ -60,7 +60,7 @@ export class Detector {
    *
    * @returns Array of git-ignored paths (relative to repo root)
    */
-  private static getGitignoredPaths(): string[] {
+  private getGitignoredPaths(): string[] {
     try {
       const command =
         "git ls-files --directory --no-empty-directory --others --ignored --exclude-standard";
@@ -85,7 +85,7 @@ export class Detector {
    * @param path The path to check
    * @returns True if path exists
    */
-  static async pathExists(path: string): Promise<boolean> {
+  async pathExists(path: string): Promise<boolean> {
     try {
       await access(path);
       return true;
@@ -103,16 +103,12 @@ export class Detector {
    * @param ctx The extension context
    * @returns True if the path is within at least one allowed directory
    */
-  static isPathAllowed(
-    dirs: string[],
-    path: string,
-    ctx: ExtensionContext,
-  ): boolean {
+  isPathAllowed(dirs: string[], path: string, ctx: ExtensionContext): boolean {
     // Expand ~ to home directory before resolving
-    const normalizedPath = Detector.normalizePath(path);
+    const normalizedPath = this.normalizePath(path);
     const absPath = resolve(ctx.cwd, normalizedPath);
     const absDirs = dirs.map((dir) =>
-      resolve(ctx.cwd, Detector.normalizePath(dir)),
+      resolve(ctx.cwd, this.normalizePath(dir)),
     );
 
     return absDirs.some(
@@ -137,7 +133,7 @@ export class Detector {
    * @param path The path to check
    * @returns True if it should be gitignored
    */
-  static dynamicCheck(path: string): boolean {
+  dynamicCheck(path: string): boolean {
     try {
       const command = `git check-ignore ${path}`;
       execSync(command, {
@@ -156,7 +152,7 @@ export class Detector {
    * @param path The path
    * @returns A normalized path
    */
-  private static normalizePath(path: string): string {
+  private normalizePath(path: string): string {
     return path.replace(/^~\//g, homedir() + sep);
   }
-}
+})();
