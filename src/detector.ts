@@ -121,6 +121,37 @@ export class Detector {
   }
 
   /**
+   * Dynamically checks if a path is gitignored
+   *
+   * E.g.: If the `.gitignore` is
+   *
+   * ```
+   * .vscode/*
+   * !.vscode/launch.json
+   * ```
+   *
+   * Then,
+   * .vscode/launch.json should be preserved
+   * .vscode/tasks.json should be gitignored
+   *
+   * @param path The path to check
+   * @returns True if it should be gitignored
+   */
+  static dynamicCheck(path: string): boolean {
+    try {
+      const command = `git check-ignore ${path}`;
+      execSync(command, {
+        encoding: "utf-8",
+        stdio: ["pipe", "pipe", "ignore"],
+      });
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Normalizes the path when it comes with a tilde (representing HOME)
    * @param path The path
    * @returns A normalized path

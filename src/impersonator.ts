@@ -173,27 +173,19 @@ export class Impersonator {
    * @returns The impersonated path, if available
    */
   async resolvePath(path: string, ctx: ExtensionContext): Promise<string> {
-    // Path could be a file
+    // Path could be a file/dir
     const absPath = resolve(ctx.cwd, path);
     if (this.mapper[absPath]) return this.mapper[absPath];
 
-    // Part of the path could be in the mapper too
-    // E.g.: `.vscode/launch.json` when only `.vscode/` is gitignored)
-    const dirPath = dirname(absPath);
+    // Path could require dynamic checking
+    if (Detector.dynamicCheck(absPath)) {
+      const relPath = relative(ctx.cwd, path);
 
-    for (const [source, target] of Object.entries(this.mapper)) {
-      if (dirPath.includes(source)) {
-        // We've found a gitignored `source`
-        // Let's shoehorn it as the candidate
-        const candidateDir = dirPath.replace(source, target);
-        const baseName = basename(absPath);
+      // If the file was not in the mapper, we'll need to create it on-the-fly here
+      const response = await this.createFile(relPath, ctx.cwd, ctx);
+      this.mapper[absPath] = response;
 
-        // If the file was not in the mapper, we'll need to create it on-the-fly here
-        const response = await this.createFile(baseName, candidateDir, ctx);
-        this.mapper[absPath] = response;
-
-        return response;
-      }
+      return response;
     }
 
     // Couldn't find anything to impersonate, return the original path
