@@ -177,15 +177,27 @@ export class Impersonator {
     const absPath = resolve(ctx.cwd, path);
     if (this.mapper[absPath]) return this.mapper[absPath];
 
-    // Path could require dynamic checking
+    // Dynamic checking => Not yet in the mapper
+    // We'll need to create the path on-the-fly
     if (Detector.dynamicCheck(absPath)) {
+      const { config } = await settings.getConfig();
+
       const relPath = relative(ctx.cwd, path);
+      const projectDir = join(config.baseDir, basename(ctx.cwd));
 
-      // If the file was not in the mapper, we'll need to create it on-the-fly here
-      const response = await this.createFile(relPath, ctx.cwd, ctx);
-      this.mapper[absPath] = response;
+      if (await Detector.isDirectory(relPath)) {
+        // E.g.: `.vscode/myfolder/` when only `.vscode/` is gitignored)
+        this.mapper[absPath] = await this.createDirectory(
+          relPath,
+          projectDir,
+          ctx,
+        );
+      } else {
+        // E.g.: `.vscode/launch.json` when only `.vscode/` is gitignored)
+        this.mapper[absPath] = await this.createFile(relPath, projectDir, ctx);
+      }
 
-      return response;
+      return this.mapper[absPath];
     }
 
     // Couldn't find anything to impersonate, return the original path

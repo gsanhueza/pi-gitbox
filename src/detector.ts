@@ -1,6 +1,6 @@
 import { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { execSync } from "child_process";
-import { access } from "fs/promises";
+import { access, stat } from "fs/promises";
 import { homedir } from "node:os";
 import { resolve, sep } from "node:path";
 
@@ -144,6 +144,26 @@ export const Detector = new (class {
       return true;
     } catch {
       return false;
+    }
+  }
+
+  /**
+   * Checks if a path is a directory.
+   *
+   * First checks if the path exists on disk using fs.stat.
+   * If it doesn't exist, falls back to checking for a trailing slash.
+   *
+   * @param path The path to check (will be resolved relative to cwd)
+   * @returns True if the path is a directory
+   */
+  async isDirectory(path: string): Promise<boolean> {
+    try {
+      const absPath = resolve(path);
+      const stats = await stat(absPath);
+      return stats.isDirectory();
+    } catch {
+      // Path doesn't exist on disk, check for trailing slash
+      return path.endsWith("/") || path.endsWith(sep);
     }
   }
 
