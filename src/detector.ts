@@ -1,8 +1,8 @@
 import { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { execSync } from "child_process";
-import { access, stat } from "fs/promises";
-import { homedir } from "node:os";
-import { resolve, sep } from "node:path";
+import { access } from "fs/promises";
+import { sep } from "node:path";
+import { normalizePath, PATH_SEP, resolvePaths } from "./compat";
 
 export const Detector = new (class {
   /**
@@ -39,8 +39,7 @@ export const Detector = new (class {
    */
   getGitignoredFiles = () => {
     const paths = this.getGitignoredPaths();
-
-    return paths.filter((path) => !path.endsWith("/"));
+    return paths.filter((path) => !this.isDirectory(path));
   };
 
   /**
@@ -50,8 +49,7 @@ export const Detector = new (class {
    */
   getGitignoredDirectories = () => {
     const paths = this.getGitignoredPaths();
-
-    return paths.filter((path) => path.endsWith("/"));
+    return paths.filter(this.isDirectory);
   };
 
   /**
@@ -60,7 +58,7 @@ export const Detector = new (class {
    *
    * @returns Array of git-ignored paths (relative to repo root)
    */
-  private getGitignoredPaths(): string[] {
+  getGitignoredPaths(): string[] {
     try {
       const command =
         "git ls-files --directory --no-empty-directory --others --ignored --exclude-standard";
@@ -105,15 +103,17 @@ export const Detector = new (class {
    */
   isPathAllowed(dirs: string[], path: string, ctx: ExtensionContext): boolean {
     // Expand ~ to home directory before resolving
-    const normalizedPath = this.normalizePath(path);
-    const absPath = resolve(ctx.cwd, normalizedPath);
+    const normalizedPath = normalizePath(path);
+    const absPath = resolvePaths(ctx.cwd, normalizedPath);
     const absDirs = dirs.map((dir) =>
-      resolve(ctx.cwd, this.normalizePath(dir)),
+      resolvePaths(ctx.cwd, normalizePath(dir)),
     );
 
-    return absDirs.some(
-      (dir) => absPath === dir || absPath.startsWith(dir + sep),
+    const response = absDirs.some(
+      (dir) => absPath === dir || absPath.startsWith(dir + PATH_SEP),
     );
+
+    return response;
   }
 
   /**
@@ -150,29 +150,10 @@ export const Detector = new (class {
   /**
    * Checks if a path is a directory.
    *
-   * First checks if the path exists on disk using fs.stat.
-   * If it doesn't exist, falls back to checking for a trailing slash.
-   *
    * @param path The path to check (will be resolved relative to cwd)
    * @returns True if the path is a directory
    */
-  async isDirectory(path: string): Promise<boolean> {
-    try {
-      const absPath = resolve(path);
-      const stats = await stat(absPath);
-      return stats.isDirectory();
-    } catch {
-      // Path doesn't exist on disk, check for trailing slash
-      return path.endsWith("/") || path.endsWith(sep);
-    }
-  }
-
-  /**
-   * Normalizes the path when it comes with a tilde (representing HOME)
-   * @param path The path
-   * @returns A normalized path
-   */
-  private normalizePath(path: string): string {
-    return path.replace(/^~\//g, homedir() + sep);
+  isDirectory(path: string): boolean {
+    return path.endsWith(PATH_SEP) || path.endsWith(sep);
   }
 })();

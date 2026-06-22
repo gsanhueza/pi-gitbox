@@ -1,7 +1,8 @@
 import { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { mkdir, writeFile } from "node:fs/promises";
-import { basename, dirname, join, relative, resolve } from "node:path";
+import { basename, dirname, relative } from "node:path";
 import { parse } from "shell-quote";
+import { joinPaths, resolvePaths } from "./compat";
 import { Detector } from "./detector";
 import { settings } from "./settings";
 
@@ -29,11 +30,11 @@ export class Impersonator {
    */
   private async initializeDirectories(baseDir: string, ctx: ExtensionContext) {
     const gitignoredDirectories = Detector.getGitignoredDirectories();
-    const projectDir = join(baseDir, basename(ctx.cwd));
+    const projectDir = joinPaths(baseDir, basename(ctx.cwd));
 
     for (const path of gitignoredDirectories) {
       const impersonation = await this.createDirectory(path, projectDir, ctx);
-      const absPath = resolve(ctx.cwd, path);
+      const absPath = resolvePaths(ctx.cwd, path);
 
       if (impersonation) {
         this.mapper[absPath] = impersonation;
@@ -49,11 +50,11 @@ export class Impersonator {
    */
   private async initializeFiles(baseDir: string, ctx: ExtensionContext) {
     const gitignoredFiles = Detector.getGitignoredFiles();
-    const projectDir = join(baseDir, basename(ctx.cwd));
+    const projectDir = joinPaths(baseDir, basename(ctx.cwd));
 
     for (const path of gitignoredFiles) {
       const impersonation = await this.createFile(path, projectDir, ctx);
-      const absPath = resolve(ctx.cwd, path);
+      const absPath = resolvePaths(ctx.cwd, path);
 
       if (impersonation) {
         this.mapper[absPath] = impersonation;
@@ -75,7 +76,7 @@ export class Impersonator {
     ctx: ExtensionContext,
   ): Promise<string> {
     // Setup the gitbox for the project
-    const impersonatingPath = resolve(parentDir, relativePath);
+    const impersonatingPath = resolvePaths(parentDir, relativePath);
 
     // Create directory if it doesn't exist
     if (!(await Detector.pathExists(impersonatingPath))) {
@@ -110,13 +111,13 @@ export class Impersonator {
     const content = relativePath.endsWith(".json") ? "{}" : " ";
 
     // Setup the gitbox for the project
-    const impersonatingPath = resolve(parentDir, relativePath);
+    const impersonatingPath = resolvePaths(parentDir, relativePath);
 
     // Create file if it doesn't exist
     if (!(await Detector.pathExists(impersonatingPath))) {
       try {
         // Ensure parent directories exist first
-        const parentDir = resolve(dirname(impersonatingPath));
+        const parentDir = resolvePaths(dirname(impersonatingPath));
         await mkdir(parentDir, { recursive: true });
 
         await writeFile(impersonatingPath, content);
@@ -174,7 +175,7 @@ export class Impersonator {
    */
   async resolvePath(path: string, ctx: ExtensionContext): Promise<string> {
     // Path could be a file/dir
-    const absPath = resolve(ctx.cwd, path);
+    const absPath = resolvePaths(ctx.cwd, path);
     if (this.mapper[absPath]) return this.mapper[absPath];
 
     // Dynamic checking => Not yet in the mapper
@@ -183,7 +184,7 @@ export class Impersonator {
       const { config } = await settings.getConfig();
 
       const relPath = relative(ctx.cwd, path);
-      const projectDir = join(config.baseDir, basename(ctx.cwd));
+      const projectDir = joinPaths(config.baseDir, basename(ctx.cwd));
 
       if (await Detector.isDirectory(relPath)) {
         // E.g.: `.vscode/myfolder/` when only `.vscode/` is gitignored)

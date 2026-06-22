@@ -161,7 +161,7 @@ export class Gitbox {
     if (!Detector.isGitAvailable()) return Status.UNAVAILABLE;
     if (!Detector.isGitProject()) return Status.NOT_REQUIRED;
 
-    const paths = Detector.getGitignoredFiles();
+    const paths = Detector.getGitignoredPaths();
     if (paths.length === 0) return Status.AVAILABLE;
 
     return Status.ENABLED;
