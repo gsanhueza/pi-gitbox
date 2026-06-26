@@ -9,7 +9,7 @@ import { BASE_ALLOWED_PATHS } from "./src/defaults";
 import { Detector } from "./src/detector";
 import { Gitbox } from "./src/gitbox";
 import { Impersonator } from "./src/impersonator";
-import { askUserOrBlock } from "./src/prompts";
+import { askUserOrBlock, checkPathsAccess } from "./src/prompts";
 import { settings } from "./src/settings";
 
 export default async (pi: ExtensionAPI) => {
@@ -37,7 +37,6 @@ export default async (pi: ExtensionAPI) => {
 
   pi.on("tool_call", async (event: ToolCallEvent, ctx: ExtensionContext) => {
     const { config } = await settings.getConfig();
-
     const resolvedDirs = [...BASE_ALLOWED_PATHS, ...config.allowedPaths];
 
     if (gitbox.isBashEvent(event)) {
@@ -46,13 +45,8 @@ export default async (pi: ExtensionAPI) => {
       // First, scan if we can even access the paths
       if (!config.bypassPaths) {
         const paths = await impersonator.extractFromCommand(command);
-
-        for (const path of paths) {
-          if (Detector.isPathAllowed(resolvedDirs, path, ctx)) continue;
-
-          const response = await askUserOrBlock(ctx, path);
-          if (response.block) return response;
-        }
+        const blocked = await checkPathsAccess(paths, resolvedDirs, ctx);
+        if (blocked) return blocked;
       }
 
       // Then, impersonate the command
@@ -62,11 +56,12 @@ export default async (pi: ExtensionAPI) => {
       const { path } = event.input as { path: string };
 
       // First, scan if we can even access the paths
-      if (!config.bypassPaths) {
-        if (!Detector.isPathAllowed(resolvedDirs, path, ctx)) {
-          const response = await askUserOrBlock(ctx, path);
-          if (response.block) return response;
-        }
+      if (
+        !config.bypassPaths &&
+        !Detector.isPathAllowed(resolvedDirs, path, ctx)
+      ) {
+        const response = await askUserOrBlock(ctx, path);
+        if (response.block) return response;
       }
 
       // Then, impersonate the path
