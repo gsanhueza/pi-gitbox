@@ -6,7 +6,10 @@ export interface GitboxConfig {
   baseDir: string;
   statusBar: boolean;
   deleteOnExit: boolean;
+  // Impersonation
+  impersonateDirs: boolean;
   bypassGitbox: boolean;
+  // Permissions
   bypassPaths: boolean;
   allowedPaths: string[];
 }

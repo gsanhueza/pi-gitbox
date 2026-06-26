@@ -13,12 +13,15 @@ After enabling gitbox, verify that impersonations are working correctly:
 
 ## Features
 
-- **Gitignored file impersonation** — gitignored files and directories are automatically mirrored into a private gitbox directory
+- **Gitignored file impersonation** — gitignored files are automatically mirrored into a private gitbox directory
+- **Directory impersonation** — gitignored directories can also be mirrored (opt-in)
 - **Command & path interception** — bash commands and file operations (read, edit, write, find, grep, ls) are internally redirected to the impersonated paths
 - **Directory access control** — restricts agent access to allowed directories by default; prompts for approval when accessing paths outside the allowed list
 - **Configurable directory bypass** — optionally disable directory restrictions
 - **Status bar indicators** — color-coded status showing whether the gitbox is enabled, available, not required, unavailable or bypassed
 - **Auto cleanup** — optionally delete the gitbox when the session exits
+
+> **Note on directory impersonation:** By default, only gitignored files are impersonated. Enabling `impersonateDirs` also mirrors directories into the gitbox. This is useful when you want the agent to operate on the project without disrupting your current folders — for example, a Node project with `node_modules/` ignored by git can be used from the working directory (when `impersonateDirs: false`), or can be recreated to be available in the gitbox instead (when `impersonateDirs: true`).
 
 ## Status Bar
 
@@ -58,6 +61,7 @@ You can customize Gitbox options via the interactive menu (`/gitbox`) for common
     "baseDir": "~/.pi/agent/gitbox",
     "statusBar": true,
     "deleteOnExit": false,
+    "impersonateDirs": false,
     "bypassGitbox": false,
     "bypassPaths": false,
     "allowedPaths": []
@@ -67,24 +71,25 @@ You can customize Gitbox options via the interactive menu (`/gitbox`) for common
 
 ### Configuration Options
 
-| Option         | Type     | Default              | Description                               |
-| -------------- | -------- | -------------------- | ----------------------------------------- |
-| `baseDir`      | string   | `~/.pi/agent/gitbox` | Base directory where gitboxes are created |
-| `statusBar`    | boolean  | `true`               | Show gitbox status in the status bar      |
-| `deleteOnExit` | boolean  | `false`              | Delete the gitbox when the session exits  |
-| `bypassGitbox` | boolean  | `false`              | Skip impersonation of gitignored paths    |
-| `bypassPaths`  | boolean  | `false`              | Bypass path access restrictions entirely  |
-| `allowedPaths` | string[] | `[]`                 | Additional paths to allow access to       |
+| Option            | Type     | Default              | Description                               |
+| ----------------- | -------- | -------------------- | ----------------------------------------- |
+| `baseDir`         | string   | `~/.pi/agent/gitbox` | Base directory where gitboxes are created |
+| `statusBar`       | boolean  | `true`               | Show gitbox status in the status bar      |
+| `deleteOnExit`    | boolean  | `false`              | Delete the gitbox when the session exits  |
+| `impersonateDirs` | boolean  | `false`              | Also impersonate gitignored directories   |
+| `bypassGitbox`    | boolean  | `false`              | Skip impersonation of gitignored paths    |
+| `bypassPaths`     | boolean  | `false`              | Bypass path access restrictions entirely  |
+| `allowedPaths`    | string[] | `[]`                 | Additional paths to allow access to       |
 
-> **Note:** The interactive menu (`/gitbox`) exposes `statusBar`, `deleteOnExit`, `bypassGitbox`, and `bypassPaths`. The remaining options (`baseDir`, `allowedPaths`) must be configured directly in `settings.json`.
+> **Note:** The interactive menu (`/gitbox`) only exposes boolean keys. The remaining options (`baseDir`, `allowedPaths`) must be configured directly in `settings.json`.
 
 ### Directory Access
 
 By default, the extension allows access to:
 
 - The current working directory (`process.cwd()`)
-- The Pi agent directory (`~/.pi/agent`)
-- The extension package directory
+- The Pi agent directory (`~/.pi/agent/`)
+- The Pi package directory (`<...>/@earendil-works/pi-coding-agent`)
 - `/dev/null`
 
 If the agent attempts to access a path outside these allowed directories, a confirmation dialog appears:
@@ -115,7 +120,7 @@ Set `bypassPaths: true` to skip this check entirely.
 
 1. **Session Start** — On `session_start`, the extension checks whether the current directory is a git repository with `git` available
 2. **Gitignored Path Detection** — Uses git-specific commands to discover all gitignored files and directories
-3. **Gitbox Creation** — If the directory is a git repository, creates a private directory at `~/.pi/agent/gitbox/<project-name>` and mirrors gitignored paths into it: files get placeholder content (`{}` for `.json` and ` ` (empty space) for others)
+3. **Gitbox Creation** — If the directory is a git repository, creates a private directory at `~/.pi/agent/gitbox/<project-name>` and mirrors gitignored files into it (files get placeholder content (`{}` for `.json` and ` ` (empty space) for others)). With `impersonateDirs: true`, gitignored directories are also mirrored.
 4. **Path Mapping** — Builds a mapper from original absolute paths to their impersonated counterparts
 5. **Event Interception** — On every `tool_call` event:
    - **Bash commands** — Extracts paths from the command using `shell-quote`, checks directory restrictions, then rewrites paths to their impersonated versions

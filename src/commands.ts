@@ -15,6 +15,7 @@ import { settings } from "./settings";
 enum Options {
   STATUS_BAR = "statusBar",
   DELETE_ON_EXIT = "deleteOnExit",
+  IMPERSONATE_DIRS = "impersonateDirs",
   BYPASS_GITBOX = "bypassGitbox",
   BYPASS_PATHS = "bypassPaths",
 }
@@ -146,6 +147,13 @@ export class CommandManager {
         label: "Delete on exit",
         description: "When exiting Pi, delete the gitbox",
         currentValue: config.deleteOnExit ? "on" : "off",
+        values: ["on", "off"],
+      },
+      {
+        id: Options.IMPERSONATE_DIRS,
+        label: "Impersonate directories",
+        description: "Also impersonate gitignored directories",
+        currentValue: config.impersonateDirs ? "on" : "off",
         values: ["on", "off"],
       },
       {

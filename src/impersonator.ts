@@ -7,7 +7,8 @@ import { Detector } from "./detector";
 import { settings } from "./settings";
 
 export class Impersonator {
-  private mapper: Record<string, string> = {};
+  private fileMapper: Record<string, string> = {};
+  private dirMapper: Record<string, string> = {};
 
   /**
    * Fills the mapper with paths that are gitignored
@@ -15,11 +16,15 @@ export class Impersonator {
    * @param ctx The extension context
    */
   async initialize(ctx: ExtensionContext): Promise<void> {
-    this.mapper = {};
+    this.fileMapper = {};
+    this.dirMapper = {};
     const { config } = await settings.getConfig();
 
-    await this.initializeDirectories(config.baseDir, ctx);
     await this.initializeFiles(config.baseDir, ctx);
+
+    if (config.impersonateDirs) {
+      await this.initializeDirectories(config.baseDir, ctx);
+    }
   }
 
   /**
@@ -37,7 +42,7 @@ export class Impersonator {
       const absPath = resolvePaths(ctx.cwd, path);
 
       if (impersonation) {
-        this.mapper[absPath] = impersonation;
+        this.dirMapper[absPath] = impersonation;
       }
     }
   }
@@ -57,7 +62,7 @@ export class Impersonator {
       const absPath = resolvePaths(ctx.cwd, path);
 
       if (impersonation) {
-        this.mapper[absPath] = impersonation;
+        this.fileMapper[absPath] = impersonation;
       }
     }
   }
@@ -140,7 +145,7 @@ export class Impersonator {
   getMapper(baseDir: string): Record<string, string> {
     const result: Record<string, string> = {};
 
-    for (const [absSource, target] of Object.entries(this.mapper)) {
+    for (const [absSource, target] of Object.entries(this.fileMapper)) {
       result[relative(baseDir, absSource)] = target;
     }
 
@@ -174,31 +179,42 @@ export class Impersonator {
    * @returns The impersonated path, if available
    */
   async resolvePath(path: string, ctx: ExtensionContext): Promise<string> {
-    // Path could be a file/dir
     const absPath = resolvePaths(ctx.cwd, path);
-    if (this.mapper[absPath]) return this.mapper[absPath];
+
+    // Check file mapper first
+    if (this.fileMapper[absPath]) return this.fileMapper[absPath];
+
+    // Check directory mapper only if impersonateDirs is enabled
+    const { config } = await settings.getConfig();
+
+    if (!config.impersonateDirs) return path;
+    if (this.dirMapper[absPath]) return this.dirMapper[absPath];
 
     // Dynamic checking => Not yet in the mapper
     // We'll need to create the path on-the-fly
     if (Detector.dynamicCheck(absPath)) {
-      const { config } = await settings.getConfig();
-
       const relPath = relative(ctx.cwd, path);
       const projectDir = joinPaths(config.baseDir, basename(ctx.cwd));
 
-      if (await Detector.isDirectory(relPath)) {
+      if (Detector.isDirectory(relPath)) {
+        if (!config.impersonateDirs) return absPath;
+
         // E.g.: `.vscode/myfolder/` when only `.vscode/` is gitignored)
-        this.mapper[absPath] = await this.createDirectory(
+        this.dirMapper[absPath] = await this.createDirectory(
           relPath,
           projectDir,
           ctx,
         );
+        return this.dirMapper[absPath];
       } else {
         // E.g.: `.vscode/launch.json` when only `.vscode/` is gitignored)
-        this.mapper[absPath] = await this.createFile(relPath, projectDir, ctx);
+        this.fileMapper[absPath] = await this.createFile(
+          relPath,
+          projectDir,
+          ctx,
+        );
+        return this.fileMapper[absPath];
       }
-
-      return this.mapper[absPath];
     }
 
     // Couldn't find anything to impersonate, return the original path
@@ -238,9 +254,6 @@ export class Impersonator {
 
     // Command flags and options
     if (candidate.startsWith("-")) return false;
-
-    // Pure numbers (e.g., 42, 3.14, -0)
-    if (/^-?\d+(\.\d+)?$/.test(candidate)) return false;
 
     // URLs (e.g., https://example.com, ftp://...)
     if (/^[a-z]+:\/\//i.test(candidate)) return false;

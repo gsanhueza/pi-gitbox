@@ -22,6 +22,16 @@ export const GITBOX_STATUSBAR = true;
 export const DELETE_ON_EXIT = false;
 
 /**
+ * Whether to also impersonate gitignored directories
+ */
+export const IMPERSONATE_DIRS = false;
+
+/**
+ * Whether to bypass impersonation entirely
+ */
+export const BYPASS_GITBOX = false;
+
+/**
  * Default paths that are always allowed.
  */
 export const BASE_ALLOWED_PATHS: string[] = [
@@ -48,8 +58,3 @@ export const ALLOWED_PATHS: string[] = [];
  * Whether to bypass path restrictions
  */
 export const BYPASS_PATHS = false;
-
-/**
- * Whether to bypass impersonation entirely
- */
-export const BYPASS_GITBOX = false;

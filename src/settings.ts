@@ -9,6 +9,7 @@ import {
   DELETE_ON_EXIT,
   GITBOX_BASEDIR,
   GITBOX_STATUSBAR,
+  IMPERSONATE_DIRS,
   STATUS_KEY,
 } from "./defaults";
 
@@ -40,6 +41,7 @@ class Settings {
       baseDir: GITBOX_BASEDIR,
       statusBar: GITBOX_STATUSBAR,
       deleteOnExit: DELETE_ON_EXIT,
+      impersonateDirs: IMPERSONATE_DIRS,
       bypassGitbox: BYPASS_GITBOX,
       bypassPaths: BYPASS_PATHS,
       allowedPaths: ALLOWED_PATHS,
