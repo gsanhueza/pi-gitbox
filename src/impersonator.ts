@@ -1,6 +1,7 @@
 import { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { mkdir, writeFile } from "node:fs/promises";
 import { basename, dirname, relative } from "node:path";
+import type { GlobPattern } from "shell-quote";
 import { parse } from "shell-quote";
 import { joinPaths, resolvePaths } from "./compat";
 import { Detector } from "./detector";
@@ -236,7 +237,37 @@ export class Impersonator {
       .filter((token) => typeof token === "string")
       .filter(this.isPathLike);
 
-    return paths;
+    // Collect paths from glob tokens
+    // e.g.: `file dist/*` → extracts 'dist' from the glob token
+    const globPaths = tokens
+      .filter(
+        (token): token is GlobPattern =>
+          typeof token === "object" &&
+          token !== null &&
+          "op" in token &&
+          token.op === "glob",
+      )
+      .map((token) => this.stripGlobPattern(token.pattern))
+      .filter(this.isPathLike);
+
+    return [...paths, ...globPaths];
+  }
+
+  /**
+   * Strips a simple glob pattern (`*`) from a path, returning the base path.
+   *
+   * e.g.: `dist/*` → `dist`, `*` → ``, `src/file.ts` → `src/file.ts`
+   *
+   * @param value The glob pattern value from shell-quote
+   * @returns The path with the glob suffix removed, or the original if no glob
+   */
+  private stripGlobPattern(value: string): string {
+    const starIndex = value.indexOf("*");
+    if (starIndex === -1) return value;
+
+    // Strip from the last `/` before the `*` to the end
+    const lastSlash = value.lastIndexOf("/", starIndex);
+    return lastSlash === -1 ? "" : value.substring(0, lastSlash);
   }
 
   /**
