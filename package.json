@@ -1,6 +1,6 @@
 {
   "name": "pi-gitbox",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Pi extension that impersonates gitignored paths to reduce secrets exposure.",
   "keywords": [
     "pi",
