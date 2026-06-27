@@ -125,7 +125,7 @@ Set `bypassPaths: true` to skip this check entirely.
 5. **Event Interception** — On every `tool_call` event:
    - **Bash commands** — Extracts paths from the command using `shell-quote`, checks directory restrictions, then rewrites paths to their impersonated versions
    - **Path-based tools** (read, edit, write, find, grep, ls) — Checks directory restrictions, then resolves the path to its impersonated equivalent
-   - **Dynamic fallback** — If a path wasn't detected during initialization, the extension performs a real-time `git check-ignore` lookup and creates the impersonation on the fly
+   - **Dynamic fallback** — For paths within gitignored directories that weren't explicitly detected during initialization (e.g., nested files inside an ignored directory), the extension performs a real-time `git check-ignore` lookup and creates the impersonation on the fly. Files are explicitly detected during initialization, so this fallback is primarily useful for directories
 6. **Status Bar** — Updates the status bar with the current gitbox state (enabled, available, not required, or unavailable)
 7. **Session Shutdown** — Optionally removes the gitbox directory if `deleteOnExit` is enabled
 

@@ -12,6 +12,14 @@ export class Impersonator {
   private dirMapper: Record<string, string> = {};
 
   /**
+   * Returns a combined mapper of both file and directory impersonations
+   * @returns Combined source -> target path mapping
+   */
+  get pathMapper(): Record<string, string> {
+    return { ...this.fileMapper, ...this.dirMapper };
+  }
+
+  /**
    * Fills the mapper with paths that are gitignored
    *
    * @param ctx The extension context
@@ -146,7 +154,39 @@ export class Impersonator {
   getMapper(baseDir: string): Record<string, string> {
     const result: Record<string, string> = {};
 
+    for (const [absSource, target] of Object.entries(this.pathMapper)) {
+      result[relative(baseDir, absSource)] = target;
+    }
+
+    return result;
+  }
+
+  /**
+   * Returns the file mapper, with sources relative to the given base directory.
+   *
+   * @param baseDir The base directory to resolve relative paths against
+   * @returns The source -> target path mapping for files
+   */
+  getFileMapper(baseDir: string): Record<string, string> {
+    const result: Record<string, string> = {};
+
     for (const [absSource, target] of Object.entries(this.fileMapper)) {
+      result[relative(baseDir, absSource)] = target;
+    }
+
+    return result;
+  }
+
+  /**
+   * Returns the directory mapper, with sources relative to the given base directory.
+   *
+   * @param baseDir The base directory to resolve relative paths against
+   * @returns The source -> target path mapping for directories
+   */
+  getDirMapper(baseDir: string): Record<string, string> {
+    const result: Record<string, string> = {};
+
+    for (const [absSource, target] of Object.entries(this.dirMapper)) {
       result[relative(baseDir, absSource)] = target;
     }
 
@@ -187,19 +227,18 @@ export class Impersonator {
 
     // Check directory mapper only if impersonateDirs is enabled
     const { config } = await settings.getConfig();
-
     if (!config.impersonateDirs) return path;
+
+    // Check existence in dirMapper
     if (this.dirMapper[absPath]) return this.dirMapper[absPath];
 
-    // Dynamic checking => Not yet in the mapper
+    // Not yet in the mapper => Dynamic checking
     // We'll need to create the path on-the-fly
     if (Detector.dynamicCheck(absPath)) {
       const relPath = relative(ctx.cwd, path);
       const projectDir = joinPaths(config.baseDir, basename(ctx.cwd));
 
-      if (Detector.isDirectory(relPath)) {
-        if (!config.impersonateDirs) return absPath;
-
+      if (Detector.isDirectory(absPath)) {
         // E.g.: `.vscode/myfolder/` when only `.vscode/` is gitignored)
         this.dirMapper[absPath] = await this.createDirectory(
           relPath,

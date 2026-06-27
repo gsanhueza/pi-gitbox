@@ -88,6 +88,28 @@ export class Gitbox {
   }
 
   /**
+   * Returns the file mapper from the impersonator.
+   * Delegates to impersonator instance
+   *
+   * @param ctx The extension context
+   * @returns The source -> target path mapping for files
+   */
+  getFileMapper(ctx: ExtensionContext): Record<string, string> {
+    return this.impersonator.getFileMapper(ctx.cwd);
+  }
+
+  /**
+   * Returns the directory mapper from the impersonator.
+   * Delegates to impersonator instance
+   *
+   * @param ctx The extension context
+   * @returns The source -> target path mapping for directories
+   */
+  getDirMapper(ctx: ExtensionContext): Record<string, string> {
+    return this.impersonator.getDirMapper(ctx.cwd);
+  }
+
+  /**
    * Validates the configuration settings
    *
    * @param ctx The extension context

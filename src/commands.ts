@@ -73,10 +73,14 @@ export class CommandManager {
    * @param ctx The extension context
    */
   private async runGitboxPaths(ctx: ExtensionCommandContext): Promise<void> {
-    const mapper = this.gitbox.getMapper(ctx);
+    const fileMapper = this.gitbox.getFileMapper(ctx);
+    const dirMapper = this.gitbox.getDirMapper(ctx);
 
-    const lines = Object.entries(mapper)
-      .map(([source, target]) => `  ${source} -> ${target}`)
+    const lines = Object.entries({ ...fileMapper, ...dirMapper })
+      .map(([source, target]) => {
+        const icon = source in dirMapper ? "📁" : "📄";
+        return `  ${icon} ${source} -> ${target}`;
+      })
       .join("\n");
 
     const content = lines

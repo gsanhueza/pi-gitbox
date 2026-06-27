@@ -1,7 +1,7 @@
 import { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { execSync } from "child_process";
+import { statSync } from "fs";
 import { access } from "fs/promises";
-import { sep } from "node:path";
 import { normalizePath, PATH_SEP, resolvePaths } from "./compat";
 
 export const Detector = new (class {
@@ -154,6 +154,11 @@ export const Detector = new (class {
    * @returns True if the path is a directory
    */
   isDirectory(path: string): boolean {
-    return path.endsWith(PATH_SEP) || path.endsWith(sep);
+    try {
+      const absPath = resolvePaths(path);
+      return statSync(absPath).isDirectory();
+    } catch {
+      return false;
+    }
   }
 })();
