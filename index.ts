@@ -66,7 +66,7 @@ export default async (pi: ExtensionAPI) => {
 
       // Then, impersonate the path
       if (!config.bypassGitbox)
-        event.input.path = await gitbox.resolvePath(path, ctx);
+        (event.input as { path: string }).path = await gitbox.resolvePath(path, ctx);
     }
   });
 };
