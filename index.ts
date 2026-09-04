@@ -6,10 +6,9 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import { CommandManager } from "./src/commands";
 import { BASE_ALLOWED_PATHS } from "./src/defaults";
-import { Detector } from "./src/detector";
 import { Gitbox } from "./src/gitbox";
 import { Impersonator } from "./src/impersonator";
-import { askUserOrBlock, checkPathsAccess } from "./src/prompts";
+import { checkPathsAccess } from "./src/prompts";
 import { settings } from "./src/settings";
 
 export default async (pi: ExtensionAPI) => {
@@ -45,7 +44,14 @@ export default async (pi: ExtensionAPI) => {
       // First, scan if we can even access the paths
       if (!config.bypassPaths) {
         const paths = await impersonator.extractFromCommand(command);
-        const blocked = await checkPathsAccess(paths, resolvedDirs, ctx);
+        const skipMissing =
+          config.skipMissingPaths && gitbox.isReadOnlyCommand(command);
+        const blocked = await checkPathsAccess(
+          paths,
+          resolvedDirs,
+          ctx,
+          skipMissing,
+        );
         if (blocked) return blocked;
       }
 
@@ -56,17 +62,24 @@ export default async (pi: ExtensionAPI) => {
       const { path } = event.input as { path: string };
 
       // First, scan if we can even access the paths
-      if (
-        !config.bypassPaths &&
-        !Detector.isPathAllowed(resolvedDirs, path, ctx)
-      ) {
-        const response = await askUserOrBlock(ctx, path);
-        if (response.block) return response;
+      if (!config.bypassPaths) {
+        const skipMissing =
+          config.skipMissingPaths && !gitbox.isWritingEvent(event);
+        const blocked = await checkPathsAccess(
+          [path],
+          resolvedDirs,
+          ctx,
+          skipMissing,
+        );
+        if (blocked) return blocked;
       }
 
       // Then, impersonate the path
       if (!config.bypassGitbox)
-        (event.input as { path: string }).path = await gitbox.resolvePath(path, ctx);
+        (event.input as { path: string }).path = await gitbox.resolvePath(
+          path,
+          ctx,
+        );
     }
   });
 };

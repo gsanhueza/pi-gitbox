@@ -58,3 +58,8 @@ export const ALLOWED_PATHS: string[] = [];
  * Whether to bypass path restrictions
  */
 export const BYPASS_PATHS = false;
+
+/**
+ * Whether to skip prompts for paths that don't exist on disk
+ */
+export const SKIP_MISSING_PATHS = false;

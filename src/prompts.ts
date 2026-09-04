@@ -51,19 +51,31 @@ export const askUserOrBlock = async (
 /**
  * Checks if all paths are allowed, prompting the user if needed.
  *
+ * When `skipMissing` is true, paths that are outside the allowed dirs
+ * but do not exist on disk are silently skipped (noise reduction).
+ * Paths that DO exist always prompt as usual.
+ *
  * @param paths Paths to check
  * @param resolvedDirs Allowed directories
  * @param ctx The extension context
+ * @param skipMissing If true, skip non-existing paths outside allowed dirs
  * @returns The blocked response if any path was denied, or null
  */
 export const checkPathsAccess = async (
   paths: string[],
   resolvedDirs: string[],
   ctx: ExtensionContext,
+  skipMissing: boolean = false,
 ): Promise<{ block: boolean; reason?: string } | null> => {
-  for (const path of paths) {
-    if (Detector.isPathAllowed(resolvedDirs, path, ctx)) continue;
+  const pending: string[] = [];
 
+  for (const path of new Set(paths)) {
+    if (Detector.isPathAllowed(resolvedDirs, path, ctx)) continue;
+    if (skipMissing && !(await Detector.pathExists(path, ctx.cwd))) continue;
+    pending.push(path);
+  }
+
+  for (const path of pending) {
     const response = await askUserOrBlock(ctx, path);
     if (response.block) return response;
   }

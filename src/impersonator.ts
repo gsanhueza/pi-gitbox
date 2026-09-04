@@ -5,6 +5,7 @@ import type { GlobPattern } from "shell-quote";
 import { parse } from "shell-quote";
 import { joinPaths, resolvePaths } from "./compat";
 import { Detector } from "./detector";
+import { READ_ONLY_COMMANDS } from "./read-only-commands";
 import { settings } from "./settings";
 
 export class Impersonator {
@@ -307,6 +308,50 @@ export class Impersonator {
     // Strip from the last `/` before the `*` to the end
     const lastSlash = value.lastIndexOf("/", starIndex);
     return lastSlash === -1 ? "" : value.substring(0, lastSlash);
+  }
+
+  /**
+   * Determines if a bash command is entirely read-only.
+   *
+   * A command is read-only if:
+   * - Every program in every pipeline/chain position is in READ_ONLY_COMMANDS
+   * - No output redirections (>, >>, 2>, etc.)
+   * - No command substitutions ($(), ``, $var)
+   * - No subshells (())
+   * - No absolute/relative program paths (./cat, /usr/bin/cat)
+   * - No sudo/env prefixes
+   *
+   * @param command The bash command string
+   * @returns True if the command is entirely read-only
+   */
+  isReadOnlyCommand(command: string): boolean {
+    const tokens = parse(command);
+    if (tokens.length === 0) return false;
+
+    const CMD_SEPARATORS = new Set(["|", "&&", "||", ";", "\n"]);
+    const SAFE_OPS = new Set([...CMD_SEPARATORS, "glob"]);
+
+    let atCommandPosition = true;
+    for (const token of tokens) {
+      if (typeof token !== "string") {
+        const op = (token as { op: string }).op;
+        if (!SAFE_OPS.has(op)) return false;
+        atCommandPosition = CMD_SEPARATORS.has(op);
+        continue;
+      }
+
+      // Reject command substitutions
+      if (token.includes("$") || token.startsWith("`")) return false;
+
+      if (atCommandPosition) {
+        // Reject absolute/relative program paths (./cat, /usr/bin/cat)
+        if (token !== basename(token)) return false;
+        // Reject unknown programs
+        if (!READ_ONLY_COMMANDS.includes(token)) return false;
+        atCommandPosition = false;
+      }
+    }
+    return true;
   }
 
   /**

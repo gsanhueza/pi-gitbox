@@ -3,6 +3,8 @@
 A [Pi Coding Agent](https://pi.dev/) extension that automatically redirects gitignored files and directories into an isolated **gitbox** — a local impersonation layer that makes them accessible to the AI agent without exposing your secrets. (_"gitbox"_ is a portmanteau of _"git"_ + _"sandbox"_.)
 
 > **⚠️ DISCLAIMER:** This extension uses best-effort impersonation of gitignored paths. It is **your responsibility** to verify that secrets are not exposed to the agent. If absolute isolation is required, consider using a local model, [bubblewrap](https://github.com/containers/bubblewrap), or a fully isolated environment.
+>
+> Prompt suppression (via `skipMissingPaths`) is best-effort noise reduction, **not** a security isolation mechanism. It should not be relied upon to protect sensitive paths.
 
 ## Security considerations
 
@@ -64,6 +66,7 @@ You can customize Gitbox options via the interactive menu (`/gitbox`) for common
     "impersonateDirs": false,
     "bypassGitbox": false,
     "bypassPaths": false,
+    "skipMissingPaths": false,
     "allowedPaths": []
   }
 }
@@ -71,15 +74,16 @@ You can customize Gitbox options via the interactive menu (`/gitbox`) for common
 
 ### Configuration Options
 
-| Option            | Type     | Default              | Description                               |
-| ----------------- | -------- | -------------------- | ----------------------------------------- |
-| `baseDir`         | string   | `~/.pi/agent/gitbox` | Base directory where gitboxes are created |
-| `statusBar`       | boolean  | `true`               | Show gitbox status in the status bar      |
-| `deleteOnExit`    | boolean  | `false`              | Delete the gitbox when the session exits  |
-| `impersonateDirs` | boolean  | `false`              | Also impersonate gitignored directories   |
-| `bypassGitbox`    | boolean  | `false`              | Skip impersonation of gitignored paths    |
-| `bypassPaths`     | boolean  | `false`              | Bypass path access restrictions entirely  |
-| `allowedPaths`    | string[] | `[]`                 | Additional paths to allow access to       |
+| Option             | Type     | Default              | Description                                                                                             |
+| ------------------ | -------- | -------------------- | ------------------------------------------------------------------------------------------------------- |
+| `baseDir`          | string   | `~/.pi/agent/gitbox` | Base directory where gitboxes are created                                                               |
+| `statusBar`        | boolean  | `true`               | Show gitbox status in the status bar                                                                    |
+| `deleteOnExit`     | boolean  | `false`              | Delete the gitbox when the session exits                                                                |
+| `impersonateDirs`  | boolean  | `false`              | Also impersonate gitignored directories                                                                 |
+| `bypassGitbox`     | boolean  | `false`              | Skip impersonation of gitignored paths                                                                  |
+| `bypassPaths`      | boolean  | `false`              | Bypass path access restrictions entirely                                                                |
+| `skipMissingPaths` | boolean  | `false`              | Only prompt for paths that exist on disk. `write`/`edit` and non-read-only bash commands always prompt. |
+| `allowedPaths`     | string[] | `[]`                 | Additional paths to allow access to                                                                     |
 
 > **Note:** The interactive menu (`/gitbox`) only exposes boolean keys. The remaining options (`baseDir`, `allowedPaths`) must be configured directly in `settings.json`.
 
@@ -106,6 +110,14 @@ Options:
 - **Bypass (saved globally)** — Add the path to allowed paths permanently
 
 Set `bypassPaths: true` to skip this check entirely.
+
+When `skipMissingPaths` is enabled, paths that are outside the allowed directories **but do not exist on disk** are silently skipped. This reduces noise from search patterns (e.g. `grep "/api/v1" src/`) and program names being mistaken for paths. The setting is off by default and has the following safety guarantees:
+
+- **Writes always prompt**: the filter never applies to `write`/`edit` tools, nor to bash commands that are not entirely read-only.
+- **Existing files always prompt**: a path that exists on disk is never skipped, even if the command is read-only.
+- **`bypassPaths: true` wins**: when directory restrictions are fully bypassed, `skipMissingPaths` is a no-op.
+
+Read-only bash detection uses a fixed built-in list of programs (`cat`, `grep`, `ls`, `find`, `rg`, `head`, `tail`, `stat`, `diff`, etc.) that only read the paths given to them. Any command with output redirection (`>`, `>>`), command substitution (`$(...)`), subshells, `sudo`, or programs not in the list is treated as potentially write-capable and always prompts as usual. The list is not configurable.
 
 > **Note:** When Pi doesn't have access to a UI, access will be automatically blocked.
 

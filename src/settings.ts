@@ -10,6 +10,7 @@ import {
   GITBOX_BASEDIR,
   GITBOX_STATUSBAR,
   IMPERSONATE_DIRS,
+  SKIP_MISSING_PATHS,
   STATUS_KEY,
 } from "./defaults";
 
@@ -45,6 +46,7 @@ class Settings {
       bypassGitbox: BYPASS_GITBOX,
       bypassPaths: BYPASS_PATHS,
       allowedPaths: ALLOWED_PATHS,
+      skipMissingPaths: SKIP_MISSING_PATHS,
     };
   }
 

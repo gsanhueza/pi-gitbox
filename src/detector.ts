@@ -1,7 +1,7 @@
 import { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { execSync } from "child_process";
 import { statSync } from "fs";
-import { access } from "fs/promises";
+import { lstat } from "fs/promises";
 import { normalizePath, PATH_SEP, resolvePaths } from "./compat";
 
 export const Detector = new (class {
@@ -78,17 +78,28 @@ export const Detector = new (class {
   }
 
   /**
-   * Checks if a path exists
+   * Checks if a path exists on disk.
+   * Uses lstat so dangling symlinks count as real.
+   * Only genuine "missing" errors (ENOENT, ENOTDIR) return false;
+   * everything else (EACCES, EPERM, …) counts as existing (security-first).
    *
    * @param path The path to check
-   * @returns True if path exists
+   * @param cwd Working directory to resolve relative paths against
+   * @returns True if path exists (or might exist due to permission errors)
    */
-  async pathExists(path: string): Promise<boolean> {
+  async pathExists(
+    path: string,
+    cwd: string = process.cwd(),
+  ): Promise<boolean> {
+    if (!path) return false;
     try {
-      await access(path);
+      await lstat(resolvePaths(cwd, normalizePath(path)));
       return true;
-    } catch {
-      return false;
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException)?.code ?? "";
+      // Only genuine "missing" errors mean the path doesn't exist.
+      // EACCES/EPERM/ELOOP/… => treat as existing (security-first).
+      return code !== "ENOENT" && code !== "ENOTDIR";
     }
   }
 

@@ -12,6 +12,7 @@ export interface GitboxConfig {
   // Permissions
   bypassPaths: boolean;
   allowedPaths: string[];
+  skipMissingPaths: boolean;
 }
 
 /**

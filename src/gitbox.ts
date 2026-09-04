@@ -55,6 +55,27 @@ export class Gitbox {
   }
 
   /**
+   * Determines if the event is a writing tool call (write, edit)
+   * @param event The event
+   * @returns True if the event writes to disk
+   */
+  isWritingEvent(event: ToolCallEvent): boolean {
+    const writeTools = ["write", "edit"];
+    return writeTools.some((tool) => isToolCallEventType(tool, event));
+  }
+
+  /**
+   * Determines if a bash command is entirely read-only.
+   * Delegates to impersonator.
+   *
+   * @param command The bash command string
+   * @returns True if the command is entirely read-only
+   */
+  isReadOnlyCommand(command: string): boolean {
+    return this.impersonator.isReadOnlyCommand(command);
+  }
+
+  /**
    * Impersonates the bash command, if possible
    *
    * @param cmd The bash command whose paths will be impersonated

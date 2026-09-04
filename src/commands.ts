@@ -18,6 +18,7 @@ enum Options {
   IMPERSONATE_DIRS = "impersonateDirs",
   BYPASS_GITBOX = "bypassGitbox",
   BYPASS_PATHS = "bypassPaths",
+  SKIP_MISSING_PATHS = "skipMissingPaths",
 }
 
 /**
@@ -173,6 +174,14 @@ export class CommandManager {
         label: "Bypass directories",
         description: "Bypass the restrictions on allowed directories",
         currentValue: config.bypassPaths ? "on" : "off",
+        values: ["on", "off"],
+      },
+      {
+        id: Options.SKIP_MISSING_PATHS,
+        label: "Skip missing paths",
+        description:
+          "Only check paths that exist on disk (writes always check)",
+        currentValue: config.skipMissingPaths ? "on" : "off",
         values: ["on", "off"],
       },
     ];

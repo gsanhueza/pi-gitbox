@@ -89,4 +89,66 @@ describe("Impersonator", () => {
       expect(result).not.toContain("fi");
     });
   });
+
+  describe("isReadOnlyCommand", () => {
+    it("accepts a simple read-only command", () => {
+      expect(imp.isReadOnlyCommand("cat file.txt")).toBe(true);
+    });
+
+    it("accepts piped read-only commands", () => {
+      expect(imp.isReadOnlyCommand("ls | grep pattern")).toBe(true);
+    });
+
+    it("accepts chained read-only commands", () => {
+      expect(imp.isReadOnlyCommand("ls && cat file.txt")).toBe(true);
+    });
+
+    it("accepts read-only commands with globs", () => {
+      expect(imp.isReadOnlyCommand("ls *.ts")).toBe(true);
+    });
+
+    it("rejects output redirection", () => {
+      expect(imp.isReadOnlyCommand("cat file.txt > /tmp/output")).toBe(false);
+    });
+
+    it("rejects stderr redirection", () => {
+      expect(imp.isReadOnlyCommand("cat file.txt 2>/dev/null")).toBe(false);
+    });
+
+    it("rejects command substitution", () => {
+      expect(imp.isReadOnlyCommand("echo $(whoami)")).toBe(false);
+    });
+
+    it("rejects sudo prefix", () => {
+      expect(imp.isReadOnlyCommand("sudo cat /etc/shadow")).toBe(false);
+    });
+
+    it("rejects non-read-only programs", () => {
+      expect(imp.isReadOnlyCommand("bash -c 'cat /etc/shadow'")).toBe(false);
+    });
+
+    it("rejects subshells", () => {
+      expect(imp.isReadOnlyCommand("(cat file.txt)")).toBe(false);
+    });
+
+    it("rejects relative program paths", () => {
+      expect(imp.isReadOnlyCommand("./cat file.txt")).toBe(false);
+    });
+
+    it("rejects absolute program paths", () => {
+      expect(imp.isReadOnlyCommand("/usr/bin/cat file.txt")).toBe(false);
+    });
+
+    it("rejects mixed read-only and write commands", () => {
+      expect(imp.isReadOnlyCommand("cat file.txt; rm -rf /")).toBe(false);
+    });
+
+    it("rejects empty command", () => {
+      expect(imp.isReadOnlyCommand("")).toBe(false);
+    });
+
+    it("rejects environment variable assignments", () => {
+      expect(imp.isReadOnlyCommand("FOO=1 cat file.txt")).toBe(false);
+    });
+  });
 });
