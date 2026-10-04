@@ -4,15 +4,14 @@ import { SettingsItem, type ValidationResult } from "../base";
 /**
  * Group settings item for allowedPaths.
  *
- * This item does not have a direct value — it opens a submenu
- * for managing the list of allowed paths.
+ * This item does not have a direct value — Enter opens a submenu
+ * (the AllowedPathsEditor) for managing the list of allowed paths.
  */
 export class AllowedPathsSettingsItem extends SettingsItem {
   readonly id = "allowedPaths";
   readonly label = "Allowed paths";
   readonly description =
     "Extra paths that are always allowed (beyond the built-in ones)";
-  readonly values = undefined;
 
   /**
    * Formats the current allowedPaths as a display string.
@@ -29,7 +28,9 @@ export class AllowedPathsSettingsItem extends SettingsItem {
   }
 
   /**
-   * Validation is not applicable for group items.
+   * Not applicable for group items: the editor writes the paths array
+   * directly via `settings.setConfig`, bypassing the display-value
+   * round-trip used by dropdown items.
    *
    * @param _config The current GitboxConfig.
    * @param _value The display-value string from the user.

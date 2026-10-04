@@ -26,6 +26,16 @@ export interface SettingsListActions {
    * @returns Nothing.
    */
   onDelete?: (itemId: string) => void;
+  /**
+   * Hint line shown when the list is empty (requires `onAdd`).
+   * Defaults to the provider-override text.
+   */
+  emptyHint?: string;
+  /**
+   * Whether the standard hint line advertises the `r` reset shortcut.
+   * Defaults to true; editors without a reset action hide it.
+   */
+  showResetHint?: boolean;
 }
 
 /**
@@ -119,7 +129,8 @@ export class ResettableSettingsList extends SettingsList {
 
   /**
    * Replaces the list items in place (the component instance held by the
-   * TUI stays the same). Selection is clamped to the new item count.
+   * TUI stays the same). Selection is clamped to the new item count, and
+   * the visible window grows so no row is hidden when the list grows.
    *
    * @param items The new items to display.
    */
@@ -127,6 +138,7 @@ export class ResettableSettingsList extends SettingsList {
     const internal = this.internals;
     internal.items = items;
     internal.filteredItems = items;
+    internal.maxVisible = Math.max(internal.maxVisible, items.length);
     internal.selectedIndex = Math.min(
       internal.selectedIndex,
       Math.max(0, items.length - 1),
@@ -151,6 +163,7 @@ export class ResettableSettingsList extends SettingsList {
   closeModal(): void {
     this.internals.submenuComponent = null;
     this.internals.submenuItemIndex = null;
+    this.tui.requestRender();
   }
 
   /**
@@ -164,11 +177,16 @@ export class ResettableSettingsList extends SettingsList {
     const last = lines[lines.length - 1];
     if (last === undefined) return lines;
 
+    // A submenu/modal (e.g. a nested list editor) advertises its own
+    // shortcuts in its last line — leave it untouched.
+    if (this.hasOpenSubmenu()) return lines;
+
     // Empty list: advertise the add shortcut instead of the generic hint
     if (this.actions.onAdd && this.internals.items.length === 0) {
       lines[lines.length - 1] = truncateToWidth(
         this.hintTheme.hint(
-          "  Press (a) to add a provider override · Esc to cancel",
+          this.actions.emptyHint ??
+            "  Press (a) to add a provider override · Esc to cancel",
         ),
         width,
       );
@@ -181,7 +199,9 @@ export class ResettableSettingsList extends SettingsList {
       const parts = ["Enter/Space to change"];
       if (this.actions.onAdd) parts.push("a add");
       if (this.actions.onDelete) parts.push("d remove");
-      parts.push("r reset to default", "Esc to cancel");
+      if (this.actions.showResetHint !== false)
+        parts.push("r reset to default");
+      parts.push("Esc to cancel");
       lines[lines.length - 1] = truncateToWidth(
         this.hintTheme.hint(`  ${parts.join(" · ")}`),
         width,
@@ -198,6 +218,7 @@ export class ResettableSettingsList extends SettingsList {
   private get internals(): {
     items: SettingItem[];
     filteredItems: SettingItem[];
+    maxVisible: number;
     selectedIndex: number;
     submenuComponent: Component | null;
     submenuItemIndex: number | null;
@@ -205,6 +226,7 @@ export class ResettableSettingsList extends SettingsList {
     return this as unknown as {
       items: SettingItem[];
       filteredItems: SettingItem[];
+      maxVisible: number;
       selectedIndex: number;
       submenuComponent: Component | null;
       submenuItemIndex: number | null;

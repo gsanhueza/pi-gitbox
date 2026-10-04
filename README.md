@@ -88,7 +88,18 @@ You can customize Gitbox options via the interactive menu (`/gitbox`) for common
 | `systemNotifications` | boolean       | `true`               | Show system notifications (via `notify-send`) when user interaction is needed (Linux only)              |
 | `allowedPaths`        | string[]      | `[]`                 | Additional paths to allow access to                                                                     |
 
-> **Note:** The interactive menu (`/gitbox`) exposes boolean keys and a dropdown for `baseDir`. The `allowedPaths` option must be configured directly in `settings.json`. For a fully custom `baseDir` path, edit `settings.json` directly.
+> **Note:** The interactive menu (`/gitbox`) exposes boolean keys, a dropdown for `baseDir` and an interactive editor for `allowedPaths`. For a fully custom `baseDir` path, edit `settings.json` directly.
+
+### Managing Allowed Paths (`/gitbox` menu)
+
+The `Allowed paths` row in the `/gitbox` menu opens a drill-down editor where you can manage the list interactively:
+
+- **Add** — press `a` and type the path in the input dialog
+- **Edit** — press `Enter` on a path and modify it in the input dialog
+- **Delete** — press `d` on a path and confirm the removal
+- **Back** — press `Esc` to return to the settings menu
+
+Duplicate or empty paths are rejected inside the dialog. Every change is saved to `settings.json` immediately and applied to the running session. From the settings menu, pressing `r` on the `Allowed paths` row resets the whole list (after confirmation).
 
 ### Directory Access
 

@@ -10,7 +10,7 @@ import { SETTINGS_ITEMS } from "./settings/defaults";
  * Manages Gitbox configuration: defaults, user settings, validation,
  * caching, and persistence to ~/.pi/agent/settings.json.
  */
-class Settings {
+export class Settings {
   private cachedConfig: GitboxConfig | null = null;
   private cachedErrors: string[] = [];
 
