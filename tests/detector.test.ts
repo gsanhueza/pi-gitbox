@@ -15,7 +15,10 @@ describe("Detector.execSync methods", () => {
     const mockExec = vi.fn().mockReturnValue("git version 2.40.0");
     const detector = new Detector(mockExec);
     expect(detector.isGitAvailable()).toBe(true);
-    expect(mockExec).toHaveBeenCalledWith("git -v", { stdio: "pipe" });
+    expect(mockExec).toHaveBeenCalledWith("git -v", {
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "ignore"],
+    });
   });
 
   it("isGitAvailable returns false when execSync throws", () => {
@@ -32,7 +35,7 @@ describe("Detector.execSync methods", () => {
     expect(detector.isGitProject()).toBe(true);
     expect(mockExec).toHaveBeenCalledWith(
       "git rev-parse --is-inside-work-tree",
-      { stdio: "pipe" },
+      { encoding: "utf-8", stdio: ["pipe", "pipe", "ignore"] },
     );
   });
 

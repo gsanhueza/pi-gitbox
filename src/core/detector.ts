@@ -29,13 +29,31 @@ export class Detector {
   constructor(private readonly execFn: ExecSyncFn = execSync) {}
 
   /**
+   * Unified git command options: returns a string and suppresses stderr.
+   */
+  private readonly gitOptions: Parameters<ExecSyncFn>[1] = {
+    encoding: "utf-8",
+    stdio: ["pipe", "pipe", "ignore"],
+  };
+
+  /**
+   * Executes a git command and returns its stdout. Throws on failure.
+   *
+   * @param command The git command to execute
+   * @returns Command stdout as a string
+   */
+  private runGitCommand(command: string): string {
+    return String(this.execFn(command, this.gitOptions));
+  }
+
+  /**
    * Determines if the user has `git` as a usable command.
    *
    * @returns True if git exists
    */
   isGitAvailable(): boolean {
     try {
-      this.execFn("git -v", { stdio: "pipe" });
+      this.runGitCommand("git -v");
       return true;
     } catch {
       return false;
@@ -49,7 +67,7 @@ export class Detector {
    */
   isGitProject(): boolean {
     try {
-      this.execFn("git rev-parse --is-inside-work-tree", { stdio: "pipe" });
+      this.runGitCommand("git rev-parse --is-inside-work-tree");
       return true;
     } catch {
       return false;
@@ -84,12 +102,9 @@ export class Detector {
    */
   getGitignoredPaths(): string[] {
     try {
-      const command =
-        "git ls-files --directory --no-empty-directory --others --ignored --exclude-standard";
-      const output = this.execFn(command, {
-        encoding: "utf-8",
-        stdio: ["pipe", "pipe", "ignore"],
-      });
+      const output = this.runGitCommand(
+        "git ls-files --directory --no-empty-directory --others --ignored --exclude-standard",
+      );
       const lines = output
         .trim()
         .split("\n")
@@ -170,12 +185,7 @@ export class Detector {
    */
   dynamicCheck(path: string): boolean {
     try {
-      const command = `git check-ignore ${path}`;
-      this.execFn(command, {
-        encoding: "utf-8",
-        stdio: ["pipe", "pipe", "ignore"],
-      });
-
+      this.runGitCommand(`git check-ignore ${path}`);
       return true;
     } catch {
       return false;
