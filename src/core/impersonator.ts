@@ -148,6 +148,24 @@ export class Impersonator {
   }
 
   /**
+   * Builds a mapper with sources relative to the given base directory.
+   *
+   * @param mapper The absolute source -> target mapping
+   * @param baseDir The base directory to resolve relative paths against
+   * @returns The source -> target path mapping with relative sources
+   */
+  private buildMapper(
+    mapper: Record<string, string>,
+    baseDir: string,
+  ): Record<string, string> {
+    const result: Record<string, string> = {};
+    for (const [absSource, target] of Object.entries(mapper)) {
+      result[relative(baseDir, absSource)] = target;
+    }
+    return result;
+  }
+
+  /**
    * Returns a copy of the current mapper of impersonated paths.
    * Sources are relative paths from the base directory to the original file/directory.
    *
@@ -155,13 +173,7 @@ export class Impersonator {
    * @returns The source -> target path mapping
    */
   getMapper(baseDir: string): Record<string, string> {
-    const result: Record<string, string> = {};
-
-    for (const [absSource, target] of Object.entries(this.pathMapper)) {
-      result[relative(baseDir, absSource)] = target;
-    }
-
-    return result;
+    return this.buildMapper(this.pathMapper, baseDir);
   }
 
   /**
@@ -171,13 +183,7 @@ export class Impersonator {
    * @returns The source -> target path mapping for files
    */
   getFileMapper(baseDir: string): Record<string, string> {
-    const result: Record<string, string> = {};
-
-    for (const [absSource, target] of Object.entries(this.fileMapper)) {
-      result[relative(baseDir, absSource)] = target;
-    }
-
-    return result;
+    return this.buildMapper(this.fileMapper, baseDir);
   }
 
   /**
@@ -187,13 +193,7 @@ export class Impersonator {
    * @returns The source -> target path mapping for directories
    */
   getDirMapper(baseDir: string): Record<string, string> {
-    const result: Record<string, string> = {};
-
-    for (const [absSource, target] of Object.entries(this.dirMapper)) {
-      result[relative(baseDir, absSource)] = target;
-    }
-
-    return result;
+    return this.buildMapper(this.dirMapper, baseDir);
   }
 
   /**
