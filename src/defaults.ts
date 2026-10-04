@@ -1,10 +1,21 @@
 import { getAgentDir, getPackageDir } from "@earendil-works/pi-coding-agent";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 /**
  * Identifier for the status bar entry
  */
 export const STATUS_KEY = "gitbox";
+
+/**
+ * Default base directory for gitboxes (inside the agent directory).
+ */
+export const GITBOX_BASEDIR = join(getAgentDir(), "gitbox");
+
+/**
+ * Temporary directory for gitboxes (system temp folder).
+ */
+export const TEMPORAL_GITBOX = tmpdir();
 
 /**
  * Default for system notifications setting.

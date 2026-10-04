@@ -2,7 +2,7 @@ import { getAgentDir } from "@earendil-works/pi-coding-agent";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { GitboxConfig } from "./config-types";
-import { STATUS_KEY } from "./defaults";
+import { GITBOX_BASEDIR, STATUS_KEY } from "./defaults";
 import { SettingsItem } from "./settings/base";
 import { SETTINGS_ITEMS } from "./settings/defaults";
 
@@ -40,7 +40,7 @@ class Settings {
       }
     }
     return {
-      baseDir: "/home/gabriel/.pi/agent/gitbox",
+      baseDir: GITBOX_BASEDIR,
       statusBar: true,
       deleteOnExit: false,
       impersonateDirs: false,
