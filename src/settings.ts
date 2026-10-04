@@ -1,18 +1,10 @@
 import { getAgentDir } from "@earendil-works/pi-coding-agent";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { GitboxConfig } from "./config-types";
-import {
-  ALLOWED_PATHS,
-  BYPASS_GITBOX,
-  BYPASS_PATHS,
-  DELETE_ON_EXIT,
-  GITBOX_BASEDIR,
-  GITBOX_STATUSBAR,
-  IMPERSONATE_DIRS,
-  SKIP_MISSING_PATHS,
-  STATUS_KEY,
-} from "./defaults";
+import type { GitboxConfig } from "./config-types";
+import { STATUS_KEY } from "./defaults";
+import { SettingsItem } from "./settings/base";
+import { SETTINGS_ITEMS } from "./settings/defaults";
 
 /**
  * Manages Gitbox configuration: defaults, user settings, validation,
@@ -34,19 +26,29 @@ class Settings {
 
   /**
    * Retrieves the default configuration object.
+   * Derives defaults from registered `SettingsItem` instances —
+   * one source of truth.
    *
    * @returns The default configuration.
    */
-  private getDefaultConfig(): GitboxConfig {
+  getDefaultConfig(): GitboxConfig {
+    const defaults: Partial<GitboxConfig> = {};
+    for (const item of Object.values(SETTINGS_ITEMS)) {
+      const value = item.getDefault();
+      if (value !== undefined) {
+        (defaults as Record<string, unknown>)[item.id] = value;
+      }
+    }
     return {
-      baseDir: GITBOX_BASEDIR,
-      statusBar: GITBOX_STATUSBAR,
-      deleteOnExit: DELETE_ON_EXIT,
-      impersonateDirs: IMPERSONATE_DIRS,
-      bypassGitbox: BYPASS_GITBOX,
-      bypassPaths: BYPASS_PATHS,
-      allowedPaths: ALLOWED_PATHS,
-      skipMissingPaths: SKIP_MISSING_PATHS,
+      baseDir: "/home/gabriel/.pi/agent/gitbox",
+      statusBar: true,
+      deleteOnExit: false,
+      impersonateDirs: false,
+      bypassGitbox: false,
+      bypassPaths: false,
+      allowedPaths: [],
+      skipMissingPaths: false,
+      ...defaults,
     };
   }
 
@@ -68,6 +70,8 @@ class Settings {
 
   /**
    * Writes a partial GitboxConfig, invalidating the cache.
+   *
+   * @param partial The partial GitboxConfig to write.
    */
   async setConfig(partial: Partial<GitboxConfig>): Promise<void> {
     await this.writeExtensionSettings(partial);
@@ -129,6 +133,35 @@ class Settings {
    */
   async writeSettings(data: Record<string, unknown>): Promise<void> {
     await writeFile(this.path, JSON.stringify(data, null, 2), "utf-8");
+  }
+
+  /**
+   * Resets specific keys to their defaults by deleting them from the
+   * persisted settings file. Deleted keys fall back to their defaults.
+   *
+   * @param ids The setting ids to reset.
+   */
+  async resetKeys(ids: string[]): Promise<void> {
+    const settings = await this.readSettings();
+    const gitbox = (settings[STATUS_KEY] as Record<string, unknown>) || {};
+
+    for (const id of ids) {
+      delete gitbox[id];
+    }
+
+    settings[STATUS_KEY] = gitbox;
+    await this.writeSettings(settings);
+    this.resetConfigCache();
+  }
+
+  /**
+   * Returns the SettingsItem for a given setting id.
+   *
+   * @param id The setting identifier.
+   * @returns The SettingsItem, or undefined if not found.
+   */
+  getItem(id: string): SettingsItem | undefined {
+    return SETTINGS_ITEMS[id];
   }
 }
 

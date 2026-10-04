@@ -7,31 +7,6 @@ import { join } from "node:path";
 export const STATUS_KEY = "gitbox";
 
 /**
- * Default base directory for gitboxes
- */
-export const GITBOX_BASEDIR = join(getAgentDir(), "gitbox");
-
-/**
- * Whether to add a text in the status bar
- */
-export const GITBOX_STATUSBAR = true;
-
-/**
- * Whether to delete the gitbox when the extension exits
- */
-export const DELETE_ON_EXIT = false;
-
-/**
- * Whether to also impersonate gitignored directories
- */
-export const IMPERSONATE_DIRS = false;
-
-/**
- * Whether to bypass impersonation entirely
- */
-export const BYPASS_GITBOX = false;
-
-/**
  * Default paths that are always allowed.
  */
 export const BASE_ALLOWED_PATHS: string[] = [
@@ -47,19 +22,3 @@ export const BASE_ALLOWED_PATHS: string[] = [
   // Common paths
   "/dev/null",
 ];
-
-/**
- * Allowed paths, configurable by the user
- * Extra paths can be added via `allowedPaths` in settings.
- */
-export const ALLOWED_PATHS: string[] = [];
-
-/**
- * Whether to bypass path restrictions
- */
-export const BYPASS_PATHS = false;
-
-/**
- * Whether to skip prompts for paths that don't exist on disk
- */
-export const SKIP_MISSING_PATHS = false;

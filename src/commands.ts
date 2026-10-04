@@ -8,6 +8,7 @@ import {
 import { GitboxConfig } from "./config-types";
 import { Gitbox } from "./gitbox";
 import { settings } from "./settings";
+import { SETTINGS_ITEMS } from "./settings/defaults";
 
 /**
  * Configuration options
@@ -103,8 +104,19 @@ export class CommandManager {
     newValue: string,
     ctx: ExtensionCommandContext,
   ): Promise<void> {
-    const key: string = Object.values(Options).find((o) => o === id)!;
-    await settings.setConfig({ [key]: newValue === "on" });
+    const { config } = await settings.getConfig();
+    const item = SETTINGS_ITEMS[id];
+
+    if (!item) {
+      // Fallback for legacy enum values
+      const key: string = Object.values(Options).find((o) => o === id)!;
+      await settings.setConfig({ [key]: newValue === "on" });
+    } else {
+      const result = item.setConfig(config, newValue);
+      if (result.valid && result.config) {
+        await settings.setConfig(result.config);
+      }
+    }
 
     // Re-initialize to pick up the new configuration
     await this.gitbox.initialize(ctx);
@@ -133,57 +145,20 @@ export class CommandManager {
   }
 
   /**
-   * Builds the SettingsList items for the menu.
+   * Builds the SettingsList items from registered settings items.
    *
    * @param config The resolved configuration
    * @returns The array of SettingItem objects
    */
   private buildSettingsItems(config: GitboxConfig): SettingItem[] {
-    return [
-      {
-        id: Options.STATUS_BAR,
-        label: "Show in status bar",
-        description: "Shows gitbox status in the status bar",
-        currentValue: config.statusBar ? "on" : "off",
-        values: ["on", "off"],
-      },
-      {
-        id: Options.DELETE_ON_EXIT,
-        label: "Delete on exit",
-        description: "When exiting Pi, delete the gitbox",
-        currentValue: config.deleteOnExit ? "on" : "off",
-        values: ["on", "off"],
-      },
-      {
-        id: Options.IMPERSONATE_DIRS,
-        label: "Impersonate directories",
-        description: "Also impersonate gitignored directories",
-        currentValue: config.impersonateDirs ? "on" : "off",
-        values: ["on", "off"],
-      },
-      {
-        id: Options.BYPASS_GITBOX,
-        label: "Bypass impersonation",
-        description:
-          "Skip impersonation of gitignored paths (keeps original paths)",
-        currentValue: config.bypassGitbox ? "on" : "off",
-        values: ["on", "off"],
-      },
-      {
-        id: Options.BYPASS_PATHS,
-        label: "Bypass directories",
-        description: "Bypass the restrictions on allowed directories",
-        currentValue: config.bypassPaths ? "on" : "off",
-        values: ["on", "off"],
-      },
-      {
-        id: Options.SKIP_MISSING_PATHS,
-        label: "Skip missing paths",
-        description:
-          "Only check paths that exist on disk (writes always check)",
-        currentValue: config.skipMissingPaths ? "on" : "off",
-        values: ["on", "off"],
-      },
-    ];
+    return Object.values(SETTINGS_ITEMS)
+      .filter((item) => item.id in config)
+      .map((item) => ({
+        id: item.id,
+        label: item.label,
+        description: item.description,
+        currentValue: item.format(config) ?? "",
+        values: item.values,
+      }));
   }
 }
