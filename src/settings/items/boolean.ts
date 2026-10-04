@@ -1,4 +1,4 @@
-import type { GitboxConfig } from "../../config-types";
+import type { GitboxConfig } from "../../config/types";
 import { ScalarSettingsItem } from "./scalar";
 
 /**

@@ -1,10 +1,10 @@
 import { getAgentDir } from "@earendil-works/pi-coding-agent";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { GitboxConfig } from "./config-types";
-import { GITBOX_BASEDIR, STATUS_KEY } from "./defaults";
-import { SettingsItem } from "./settings/base";
-import { SETTINGS_ITEMS } from "./settings/defaults";
+import type { GitboxConfig } from "../config/types";
+import { GITBOX_BASEDIR, STATUS_KEY } from "../config/defaults";
+import { SettingsItem } from "./base";
+import { SETTINGS_ITEMS } from "./defaults";
 
 /**
  * Manages Gitbox configuration: defaults, user settings, validation,

@@ -6,12 +6,12 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import { mkdir, rm } from "node:fs/promises";
 import { basename, resolve } from "node:path";
-import { GitboxConfig, Status } from "./config-types";
-import { Detector } from "./detector";
-import { Impersonator } from "./impersonator";
+import { GitboxConfig, Status } from "./config/types";
+import { Detector } from "./core/detector";
+import { Impersonator } from "./core/impersonator";
 import { Renderer } from "./renderer";
 import { settings } from "./settings";
-import { StatusStrategy } from "./status-strategy";
+import { StatusStrategy } from "./core/status-strategy";
 
 export class Gitbox {
   private readonly statusStrategy: StatusStrategy;

@@ -1,4 +1,4 @@
-import type { GitboxConfig } from "../config-types";
+import type { GitboxConfig } from "../config/types";
 
 /**
  * Validation result returned by `setConfig`.

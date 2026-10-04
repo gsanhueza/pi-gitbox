@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { Status } from "../src/config-types";
-import { Detector } from "../src/detector";
-import { StatusStrategy } from "../src/status-strategy";
+import { Status } from "../src/config/types";
+import { Detector } from "../src/core/detector";
+import { StatusStrategy } from "../src/core/status-strategy";
 
 describe("StatusStrategy", () => {
   let detector: Detector;

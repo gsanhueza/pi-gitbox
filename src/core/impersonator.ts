@@ -3,10 +3,10 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { basename, dirname, relative } from "node:path";
 import type { GlobPattern } from "shell-quote";
 import { parse } from "shell-quote";
-import { joinPaths, resolvePaths } from "./compat";
+import { joinPaths, resolvePaths } from "../utils/compat";
 import { Detector } from "./detector";
-import { READ_ONLY_COMMANDS } from "./read-only-commands";
-import { settings } from "./settings";
+import { READ_ONLY_COMMANDS } from "../utils/read-only-commands";
+import { settings } from "../settings";
 
 export class Impersonator {
   constructor(private readonly detector: Detector) {}

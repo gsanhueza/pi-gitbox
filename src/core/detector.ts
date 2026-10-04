@@ -2,7 +2,7 @@ import { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { execSync } from "child_process";
 import { statSync } from "fs";
 import { lstat } from "fs/promises";
-import { normalizePath, PATH_SEP, resolvePaths } from "./compat";
+import { normalizePath, PATH_SEP, resolvePaths } from "../utils/compat";
 
 /**
  * Minimal execSync signature for git commands.

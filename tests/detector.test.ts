@@ -8,7 +8,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Detector } from "../src/detector";
+import { Detector } from "../src/core/detector";
 
 describe("Detector.execSync methods", () => {
   it("isGitAvailable returns true when execSync succeeds", () => {

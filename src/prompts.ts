@@ -1,6 +1,7 @@
 import { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { sendNotification } from "./utils/notifications";
 import { settings } from "./settings";
+import { Detector } from "./core/detector";
 
 /**
  * Prompt options
@@ -68,7 +69,7 @@ export const askUserOrBlock = async (
  * @returns The blocked response if any path was denied, or null
  */
 export const checkPathsAccess = async (
-  detector: import("./detector").Detector,
+  detector: Detector,
   paths: string[],
   resolvedDirs: string[],
   ctx: ExtensionContext,

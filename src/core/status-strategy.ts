@@ -1,5 +1,5 @@
-import type { GitboxConfig } from "./config-types";
-import { Status } from "./config-types";
+import type { GitboxConfig } from "../config/types";
+import { Status } from "../config/types";
 import type { Detector } from "./detector";
 
 /**

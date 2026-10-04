@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { Detector } from "../src/detector";
+import { Detector } from "../src/core/detector";
 import { checkPathsAccess } from "../src/prompts";
 
 // Mock askUserOrBlock

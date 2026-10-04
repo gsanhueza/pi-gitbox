@@ -6,10 +6,10 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import { execSync } from "child_process";
 import { CommandManager } from "./src/commands";
-import { BASE_ALLOWED_PATHS } from "./src/defaults";
-import { Detector } from "./src/detector";
+import { BASE_ALLOWED_PATHS } from "./src/config/defaults";
+import { Detector } from "./src/core/detector";
 import { Gitbox } from "./src/gitbox";
-import { Impersonator } from "./src/impersonator";
+import { Impersonator } from "./src/core/impersonator";
 import { checkPathsAccess } from "./src/prompts";
 import { settings } from "./src/settings";
 

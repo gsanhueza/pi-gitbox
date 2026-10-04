@@ -1,4 +1,4 @@
-import type { GitboxConfig } from "../../config-types";
+import type { GitboxConfig } from "../../config/types";
 import { SettingsItem, type ValidationResult } from "../base";
 
 /**

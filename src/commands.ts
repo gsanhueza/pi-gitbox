@@ -9,7 +9,7 @@ import {
   Container,
   type SettingItem,
 } from "@earendil-works/pi-tui";
-import { GitboxConfig } from "./config-types";
+import { GitboxConfig } from "./config/types";
 import { Gitbox } from "./gitbox";
 import { settings } from "./settings";
 import { AllowedPathsSettingsItem } from "./settings/items/allowed-paths";

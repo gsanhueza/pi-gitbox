@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { Impersonator } from "../src/impersonator";
+import { Impersonator } from "../src/core/impersonator";
 
 describe("Impersonator", () => {
   let imp: Impersonator;

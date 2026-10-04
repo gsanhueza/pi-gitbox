@@ -1,6 +1,5 @@
-import { GitboxConfig } from "../../config-types";
-import type { GitboxConfig as GitboxConfigType } from "../../config-types";
-import { GITBOX_BASEDIR, TEMPORAL_GITBOX } from "../../defaults";
+import { GITBOX_BASEDIR, TEMPORAL_GITBOX } from "../../config/defaults";
+import { GitboxConfig } from "../../config/types";
 import { ScalarSettingsItem } from "./scalar";
 
 /**
@@ -36,7 +35,7 @@ export class BaseDirSettingsItem extends ScalarSettingsItem<string> {
    * @param config The current GitboxConfig.
    * @returns The formatted display string, or undefined if unset.
    */
-  format(config: GitboxConfigType): string | undefined {
+  format(config: GitboxConfig): string | undefined {
     const value = config.baseDir;
     if (value === undefined || value === null) return undefined;
 

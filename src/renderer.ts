@@ -1,6 +1,6 @@
 import { ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { Status } from "./config-types";
-import { STATUS_KEY } from "./defaults";
+import { Status } from "./config/types";
+import { STATUS_KEY } from "./config/defaults";
 import { settings } from "./settings";
 
 export class Renderer {
