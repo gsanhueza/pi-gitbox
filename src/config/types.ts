@@ -12,7 +12,7 @@ export interface GitboxConfig {
   // Permissions
   bypassPaths: boolean;
   allowedPaths: string[];
-  systemNotifications: boolean;
+  systemNotifications: "on" | "off" | "persistent";
 }
 
 /**

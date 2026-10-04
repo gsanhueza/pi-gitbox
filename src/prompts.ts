@@ -4,6 +4,7 @@ import { sendNotification } from "./utils/notifications";
 import { settings } from "./settings";
 import { Detector } from "./core/detector";
 import { normalizePath, resolvePaths } from "./utils/compat";
+import { BypassPathsSettingsItem } from "./settings/items/bypass-paths";
 
 /**
  * Prompt options
@@ -27,24 +28,27 @@ export const askUserOrBlock = async (
   ctx: ExtensionContext,
   path: string,
 ): Promise<{ block: boolean; reason?: string }> => {
-  const reason = `Path "${path}" is outside allowed directories and was denied.`;
-
   // Check if UI is available
-  const { config } = await settings.getConfig();
   if (!ctx.hasUI) {
+    const reason = [
+      `Access denied to ${path}: UI not available.`,
+      `Enable "${new BypassPathsSettingsItem().id}" to skip prompt in no-UI mode.`,
+    ].join(" ");
     return { block: true, reason };
   }
 
-  const prompt = `[pi-gitbox]: Allow "${path}" to be accessed?`;
+  // Setup message to show
+  const message = `Allow "${path}" to be accessed?`;
+  const prompt = `[pi-gitbox]: ${message}`;
 
   // Send system notification before showing the UI prompt
-  if (config.systemNotifications) {
-    await sendNotification(`Allow "${path}" to be accessed?`);
-  }
+  const { config } = await settings.getConfig();
+  sendNotification(message, config.systemNotifications);
 
   const selected = await ctx.ui.select(prompt, Object.values(Options));
 
   // Cancel is equivalent to deny
+  const reason = `Path "${path}" is outside allowed directories and was denied.`;
   if (!selected || selected === Options.CANCEL) return { block: true, reason };
 
   // Handle allow once

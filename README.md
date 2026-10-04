@@ -20,7 +20,7 @@ After enabling gitbox, verify that impersonations are working correctly:
 - **Configurable directory bypass** — optionally disable directory restrictions
 - **Status bar indicators** — color-coded status showing whether the gitbox is enabled, available, not required, unavailable or bypassed
 - **Auto cleanup** — optionally delete the gitbox when the session exits
-- **System notifications** — show desktop notifications when user interaction is needed (Linux only)
+- **System notifications** — show desktop notifications when user interaction is needed (`on`, `off`, or `persistent` for critical notifications)
 
 > **Note on directory impersonation:** By default, only gitignored files are impersonated. Enabling `impersonateDirs` also mirrors directories into the gitbox. This is useful when you want the agent to operate on the project without disrupting your current folders — for example, a Node project with `node_modules/` ignored by git can be used from the working directory (when `impersonateDirs: false`), or can be recreated to be available in the gitbox instead (when `impersonateDirs: true`). The dynamic fallback also creates both files and directories on-the-fly when they're encountered but weren't detected during initialization.
 
@@ -65,7 +65,7 @@ You can customize Gitbox options via the interactive menu (`/gitbox`) for common
     "impersonateDirs": false,
     "bypassGitbox": false,
     "bypassPaths": false,
-    "systemNotifications": true,
+    "systemNotifications": "on",
     "allowedPaths": []
   }
 }
@@ -81,10 +81,10 @@ You can customize Gitbox options via the interactive menu (`/gitbox`) for common
 | `impersonateDirs`     | boolean  | `false`              | Also impersonate gitignored directories       |
 | `bypassGitbox`        | boolean  | `false`              | Skip impersonation of gitignored paths        |
 | `bypassPaths`         | boolean  | `false`              | Bypass path access restrictions entirely      |
-| `systemNotifications` | boolean  | `true`               | Show system notifications (via `notify-send`) |
+| `systemNotifications` | string   | `"on"`               | Show system notifications (via `notify-send`) |
 | `allowedPaths`        | string[] | `[]`                 | Additional paths to allow access to           |
 
-> **Note:** The interactive menu (`/gitbox`) exposes boolean keys, a dropdown for `baseDir` and an interactive editor for `allowedPaths`. For a fully custom `baseDir` path, edit `settings.json` directly.
+> **Note:** The interactive menu (`/gitbox`) exposes boolean keys, a dropdown for `baseDir` and `systemNotifications`, and an interactive editor for `allowedPaths`. For a fully custom `baseDir` path, edit `settings.json` directly.
 
 ### Managing Allowed Paths (`/gitbox` menu)
 
@@ -114,10 +114,10 @@ If the agent attempts to access a path outside these allowed directories, a conf
 
 Options:
 
-- **Allow** — Access the path for this session
-- **Deny** — Block access
+- **Allow once** — Access the path for this session
 - **Bypass (session only)** — Add the path to allowed paths for this session
 - **Bypass (saved globally)** — Add the path to allowed paths permanently
+- **Cancel** — Block access
 
 Set `bypassPaths: true` to skip this check entirely.
 
