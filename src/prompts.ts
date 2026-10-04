@@ -103,7 +103,7 @@ export const checkPathsAccess = async (
   const pending: string[] = [];
 
   for (const path of new Set(paths)) {
-    if (detector.isPathAllowed(resolvedDirs, path, ctx)) continue;
+    if (detector.isPathAllowed(resolvedDirs, path, ctx.cwd)) continue;
 
     const deepest = await findDeepestExistingParent(path, ctx.cwd, detector);
     if (deepest) {

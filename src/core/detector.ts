@@ -1,4 +1,3 @@
-import { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { execSync } from "child_process";
 import { statSync } from "fs";
 import { lstat } from "fs/promises";
@@ -151,13 +150,11 @@ export class Detector {
    * @param ctx The extension context
    * @returns True if the path is within at least one allowed directory
    */
-  isPathAllowed(dirs: string[], path: string, ctx: ExtensionContext): boolean {
+  isPathAllowed(dirs: string[], path: string, cwd: string): boolean {
     // Expand ~ to home directory before resolving
     const normalizedPath = normalizePath(path);
-    const absPath = resolvePaths(ctx.cwd, normalizedPath);
-    const absDirs = dirs.map((dir) =>
-      resolvePaths(ctx.cwd, normalizePath(dir)),
-    );
+    const absPath = resolvePaths(cwd, normalizedPath);
+    const absDirs = dirs.map((dir) => resolvePaths(cwd, normalizePath(dir)));
 
     const response = absDirs.some(
       (dir) => absPath === dir || absPath.startsWith(dir + PATH_SEP),
