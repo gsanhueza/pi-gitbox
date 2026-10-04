@@ -1,13 +1,10 @@
 import type { ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { getSettingsListTheme } from "@earendil-works/pi-coding-agent";
-import {
-  AutocompleteItem,
-  SettingsList,
-  type SettingItem,
-} from "@earendil-works/pi-tui";
+import { AutocompleteItem, type SettingItem } from "@earendil-works/pi-tui";
 import { GitboxConfig } from "./config-types";
 import { Gitbox } from "./gitbox";
 import { settings } from "./settings";
+import { ResettableSettingsList } from "./ui/resettable-settings-list";
 import { SETTINGS_ITEMS } from "./settings/defaults";
 
 /**
@@ -26,6 +23,11 @@ enum Options {
  * Handles commands for the pi-gitbox extension.
  */
 export class CommandManager {
+  /** Reference to the active settings list for re-rendering on reset. */
+  private settingsList: ResettableSettingsList | null = null;
+  /** Cached context for async callbacks. */
+  private commandCtx: ExtensionCommandContext | null = null;
+
   constructor(private readonly gitbox: Gitbox) {}
 
   /**
@@ -57,16 +59,22 @@ export class CommandManager {
       return await this.runGitboxPaths(ctx);
     }
 
+    this.commandCtx = ctx;
     const { config } = await settings.getConfig();
     const items = this.buildSettingsItems(config);
 
-    await ctx.ui.custom<void>((_tui, _theme, _kb, done) =>
-      this.createSettingsList(
+    await ctx.ui.custom<void>((tui, _theme, _kb, done) => {
+      this.settingsList = new ResettableSettingsList(
         items,
-        async (id, newValue) => this.handleSettingChange(id, newValue, ctx),
-        done,
-      ),
-    );
+        items.length,
+        getSettingsListTheme(),
+        (id, newValue) => this.handleSettingChange(id, newValue),
+        () => done(),
+        (id) => this.handleReset(id),
+        tui,
+      );
+      return this.settingsList;
+    });
   }
 
   /**
@@ -97,12 +105,10 @@ export class CommandManager {
    *
    * @param id The setting identifier
    * @param newValue The new value to apply
-   * @param ctx The extension command context
    */
   private async handleSettingChange(
     id: string,
     newValue: string,
-    ctx: ExtensionCommandContext,
   ): Promise<void> {
     const { config } = await settings.getConfig();
     const item = SETTINGS_ITEMS[id];
@@ -119,29 +125,41 @@ export class CommandManager {
     }
 
     // Re-initialize to pick up the new configuration
-    await this.gitbox.initialize(ctx);
+    if (this.commandCtx) {
+      await this.gitbox.initialize(this.commandCtx);
+    }
+
+    // Re-fetch fresh config and update the list item value in place
+    if (this.settingsList) {
+      const { config: freshConfig } = await settings.getConfig();
+      const freshItem = SETTINGS_ITEMS[id];
+      if (freshItem) {
+        this.settingsList.updateValue(id, freshItem.format(freshConfig) ?? "");
+      }
+    }
   }
 
   /**
-   * Creates the SettingsList for the menu.
+   * Handles a setting reset — deletes the key and re-renders the list.
    *
-   * @param items The settings items to display
-   * @param onChange Callback when a setting value changes
-   * @param onClose Callback when the dialog closes
-   * @returns The configured SettingsList instance
+   * @param id The setting identifier to reset
    */
-  private createSettingsList(
-    items: SettingItem[],
-    onChange: (id: string, newValue: string) => void,
-    onClose: () => void,
-  ): SettingsList {
-    return new SettingsList(
-      items,
-      items.length,
-      getSettingsListTheme(),
-      onChange,
-      onClose,
-    );
+  private async handleReset(id: string): Promise<void> {
+    await settings.resetKeys([id]);
+
+    // Re-initialize to pick up the reset config
+    if (this.commandCtx) {
+      await this.gitbox.initialize(this.commandCtx);
+    }
+
+    // Update the list item value in place
+    if (this.settingsList) {
+      const { config } = await settings.getConfig();
+      const item = SETTINGS_ITEMS[id];
+      if (item) {
+        this.settingsList.updateValue(id, item.format(config) ?? "");
+      }
+    }
   }
 
   /**
