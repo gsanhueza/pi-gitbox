@@ -10,11 +10,11 @@ export const SKIP_MISSING_PATHS_DEFAULT = false;
  */
 export class SkipMissingPathsSettingsItem extends BooleanSettingsItem {
   constructor() {
-    super();
-    this.options.id = "skipMissingPaths";
-    this.options.label = "Skip missing paths";
-    this.options.description =
-      "Only check paths that exist on disk (writes always check)";
-    this.options.default = SKIP_MISSING_PATHS_DEFAULT;
+    super({
+      id: "skipMissingPaths",
+      label: "Skip missing paths",
+      description: "Only check paths that exist on disk (writes always check)",
+      default: SKIP_MISSING_PATHS_DEFAULT,
+    });
   }
 }

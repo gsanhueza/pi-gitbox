@@ -10,10 +10,11 @@ export const BYPASS_PATHS_DEFAULT = false;
  */
 export class BypassPathsSettingsItem extends BooleanSettingsItem {
   constructor() {
-    super();
-    this.options.id = "bypassPaths";
-    this.options.label = "Bypass directories";
-    this.options.description = "Bypass the restrictions on allowed directories";
-    this.options.default = BYPASS_PATHS_DEFAULT;
+    super({
+      id: "bypassPaths",
+      label: "Bypass directories",
+      description: "Bypass the restrictions on allowed directories",
+      default: BYPASS_PATHS_DEFAULT,
+    });
   }
 }

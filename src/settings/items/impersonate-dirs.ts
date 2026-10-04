@@ -10,10 +10,11 @@ export const IMPERSONATE_DIRS_DEFAULT = false;
  */
 export class ImpersonateDirsSettingsItem extends BooleanSettingsItem {
   constructor() {
-    super();
-    this.options.id = "impersonateDirs";
-    this.options.label = "Impersonate directories";
-    this.options.description = "Also impersonate gitignored directories";
-    this.options.default = IMPERSONATE_DIRS_DEFAULT;
+    super({
+      id: "impersonateDirs",
+      label: "Impersonate directories",
+      description: "Also impersonate gitignored directories",
+      default: IMPERSONATE_DIRS_DEFAULT,
+    });
   }
 }

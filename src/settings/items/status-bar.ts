@@ -10,10 +10,11 @@ export const STATUS_BAR_DEFAULT = true;
  */
 export class StatusBarSettingsItem extends BooleanSettingsItem {
   constructor() {
-    super();
-    this.options.id = "statusBar";
-    this.options.label = "Show in status bar";
-    this.options.description = "Shows gitbox status in the status bar";
-    this.options.default = STATUS_BAR_DEFAULT;
+    super({
+      id: "statusBar",
+      label: "Show in status bar",
+      description: "Shows gitbox status in the status bar",
+      default: STATUS_BAR_DEFAULT,
+    });
   }
 }

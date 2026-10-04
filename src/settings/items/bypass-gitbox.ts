@@ -10,11 +10,12 @@ export const BYPASS_GITBOX_DEFAULT = false;
  */
 export class BypassGitboxSettingsItem extends BooleanSettingsItem {
   constructor() {
-    super();
-    this.options.id = "bypassGitbox";
-    this.options.label = "Bypass impersonation";
-    this.options.description =
-      "Skip impersonation of gitignored paths (keeps original paths)";
-    this.options.default = BYPASS_GITBOX_DEFAULT;
+    super({
+      id: "bypassGitbox",
+      label: "Bypass impersonation",
+      description:
+        "Skip impersonation of gitignored paths (keeps original paths)",
+      default: BYPASS_GITBOX_DEFAULT,
+    });
   }
 }

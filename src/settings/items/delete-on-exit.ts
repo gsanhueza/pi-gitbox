@@ -10,10 +10,11 @@ export const DELETE_ON_EXIT_DEFAULT = false;
  */
 export class DeleteOnExitSettingsItem extends BooleanSettingsItem {
   constructor() {
-    super();
-    this.options.id = "deleteOnExit";
-    this.options.label = "Delete on exit";
-    this.options.description = "When exiting Pi, delete the gitbox";
-    this.options.default = DELETE_ON_EXIT_DEFAULT;
+    super({
+      id: "deleteOnExit",
+      label: "Delete on exit",
+      description: "When exiting Pi, delete the gitbox",
+      default: DELETE_ON_EXIT_DEFAULT,
+    });
   }
 }

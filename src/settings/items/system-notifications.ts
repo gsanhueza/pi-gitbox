@@ -10,11 +10,11 @@ export const SYSTEM_NOTIFICATIONS_DEFAULT = true;
  */
 export class SystemNotificationsSettingsItem extends BooleanSettingsItem {
   constructor() {
-    super();
-    this.options.id = "systemNotifications";
-    this.options.label = "System notifications";
-    this.options.description =
-      "Show system notifications when user interaction is needed";
-    this.options.default = SYSTEM_NOTIFICATIONS_DEFAULT;
+    super({
+      id: "systemNotifications",
+      label: "System notifications",
+      description: "Show system notifications when user interaction is needed",
+      default: SYSTEM_NOTIFICATIONS_DEFAULT,
+    });
   }
 }
