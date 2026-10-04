@@ -1,5 +1,6 @@
 import { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Detector } from "./detector";
+import { sendNotification } from "./utils/notifications";
 import { settings } from "./settings";
 
 /**
@@ -33,6 +34,12 @@ export const askUserOrBlock = async (
   }
 
   const prompt = `[pi-gitbox]: Allow "${path}" to be accessed?`;
+
+  // Send system notification before showing the UI prompt
+  if (config.systemNotifications) {
+    await sendNotification(`Allow "${path}" to be accessed?`);
+  }
+
   const allowed = await ctx.ui.select(prompt, Object.values(Options));
 
   // Process the selected option

@@ -71,8 +71,6 @@ export abstract class ScalarSettingsItem<T> extends SettingsItem {
     return this.options.description;
   }
 
-
-
   /**
    * @returns The default value for this setting.
    */

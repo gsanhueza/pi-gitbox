@@ -7,6 +7,11 @@ import { join } from "node:path";
 export const STATUS_KEY = "gitbox";
 
 /**
+ * Default for system notifications setting.
+ */
+export const SYSTEM_NOTIFICATIONS_DEFAULT = true;
+
+/**
  * Default paths that are always allowed.
  */
 export const BASE_ALLOWED_PATHS: string[] = [

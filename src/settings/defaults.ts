@@ -7,6 +7,7 @@ import { DeleteOnExitSettingsItem } from "./items/delete-on-exit";
 import { ImpersonateDirsSettingsItem } from "./items/impersonate-dirs";
 import { SkipMissingPathsSettingsItem } from "./items/skip-missing-paths";
 import { StatusBarSettingsItem } from "./items/status-bar";
+import { SystemNotificationsSettingsItem } from "./items/system-notifications";
 
 /**
  * Settings item definitions.
@@ -21,6 +22,7 @@ export const SETTINGS_ITEMS: Record<string, SettingsItem> = {
   bypassGitbox: new BypassGitboxSettingsItem(),
   bypassPaths: new BypassPathsSettingsItem(),
   skipMissingPaths: new SkipMissingPathsSettingsItem(),
-  allowedPaths: new AllowedPathsSettingsItem(),
+  systemNotifications: new SystemNotificationsSettingsItem(),
   baseDir: new BaseDirSettingsItem(),
+  allowedPaths: new AllowedPathsSettingsItem(),
 };

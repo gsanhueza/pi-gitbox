@@ -48,6 +48,7 @@ class Settings {
       bypassPaths: false,
       allowedPaths: [],
       skipMissingPaths: false,
+      systemNotifications: true,
       ...defaults,
     };
   }

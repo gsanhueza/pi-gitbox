@@ -13,6 +13,7 @@ export interface GitboxConfig {
   bypassPaths: boolean;
   allowedPaths: string[];
   skipMissingPaths: boolean;
+  systemNotifications: boolean;
 }
 
 /**

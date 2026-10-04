@@ -22,6 +22,7 @@ After enabling gitbox, verify that impersonations are working correctly:
 - **Configurable directory bypass** — optionally disable directory restrictions
 - **Status bar indicators** — color-coded status showing whether the gitbox is enabled, available, not required, unavailable or bypassed
 - **Auto cleanup** — optionally delete the gitbox when the session exits
+- **System notifications** — show desktop notifications when user interaction is needed (Linux only)
 
 > **Note on directory impersonation:** By default, only gitignored files are impersonated. Enabling `impersonateDirs` also mirrors directories into the gitbox. This is useful when you want the agent to operate on the project without disrupting your current folders — for example, a Node project with `node_modules/` ignored by git can be used from the working directory (when `impersonateDirs: false`), or can be recreated to be available in the gitbox instead (when `impersonateDirs: true`).
 
@@ -67,23 +68,25 @@ You can customize Gitbox options via the interactive menu (`/gitbox`) for common
     "bypassGitbox": false,
     "bypassPaths": false,
     "skipMissingPaths": false,
-    "allowedPaths": []
+    "allowedPaths": [],
+    "systemNotifications": true
   }
 }
 ```
 
 ### Configuration Options
 
-| Option             | Type     | Default              | Description                                                                                             |
-| ------------------ | -------- | -------------------- | ------------------------------------------------------------------------------------------------------- |
-| `baseDir`          | string   | `~/.pi/agent/gitbox` | Base directory where gitboxes are created                                                               |
-| `statusBar`        | boolean  | `true`               | Show gitbox status in the status bar                                                                    |
-| `deleteOnExit`     | boolean  | `false`              | Delete the gitbox when the session exits                                                                |
-| `impersonateDirs`  | boolean  | `false`              | Also impersonate gitignored directories                                                                 |
-| `bypassGitbox`     | boolean  | `false`              | Skip impersonation of gitignored paths                                                                  |
-| `bypassPaths`      | boolean  | `false`              | Bypass path access restrictions entirely                                                                |
-| `skipMissingPaths` | boolean  | `false`              | Only prompt for paths that exist on disk. `write`/`edit` and non-read-only bash commands always prompt. |
-| `allowedPaths`     | string[] | `[]`                 | Additional paths to allow access to                                                                     |
+| Option                | Type     | Default              | Description                                                                                             |
+| --------------------- | -------- | -------------------- | ------------------------------------------------------------------------------------------------------- |
+| `baseDir`             | string   | `~/.pi/agent/gitbox` | Base directory where gitboxes are created                                                               |
+| `statusBar`           | boolean  | `true`               | Show gitbox status in the status bar                                                                    |
+| `deleteOnExit`        | boolean  | `false`              | Delete the gitbox when the session exits                                                                |
+| `impersonateDirs`     | boolean  | `false`              | Also impersonate gitignored directories                                                                 |
+| `bypassGitbox`        | boolean  | `false`              | Skip impersonation of gitignored paths                                                                  |
+| `bypassPaths`         | boolean  | `false`              | Bypass path access restrictions entirely                                                                |
+| `skipMissingPaths`    | boolean  | `false`              | Only prompt for paths that exist on disk. `write`/`edit` and non-read-only bash commands always prompt. |
+| `allowedPaths`        | string[] | `[]`                 | Additional paths to allow access to                                                                     |
+| `systemNotifications` | boolean  | `true`               | Show system notifications (via `notify-send`) when user interaction is needed (Linux only)              |
 
 > **Note:** The interactive menu (`/gitbox`) only exposes boolean keys. The remaining options (`baseDir`, `allowedPaths`) must be configured directly in `settings.json`.
 
