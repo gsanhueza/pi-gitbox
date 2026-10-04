@@ -49,4 +49,11 @@ export class AllowedPathsSettingsItem extends SettingsItem {
   reset(defaults: GitboxConfig): Partial<GitboxConfig> {
     return { allowedPaths: [] };
   }
+
+  /**
+   * @returns The default empty allowed paths array.
+   */
+  getDefault(): string[] {
+    return [];
+  }
 }
