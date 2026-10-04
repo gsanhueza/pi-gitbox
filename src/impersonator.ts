@@ -9,6 +9,8 @@ import { READ_ONLY_COMMANDS } from "./read-only-commands";
 import { settings } from "./settings";
 
 export class Impersonator {
+  constructor(private readonly detector: Detector) {}
+
   private fileMapper: Record<string, string> = {};
   private dirMapper: Record<string, string> = {};
 
@@ -44,7 +46,7 @@ export class Impersonator {
    * @param ctx The extension context
    */
   private async initializeDirectories(baseDir: string, ctx: ExtensionContext) {
-    const gitignoredDirectories = Detector.getGitignoredDirectories();
+    const gitignoredDirectories = this.detector.getGitignoredDirectories();
     const projectDir = joinPaths(baseDir, basename(ctx.cwd));
 
     for (const path of gitignoredDirectories) {
@@ -64,7 +66,7 @@ export class Impersonator {
    * @param ctx The extension context
    */
   private async initializeFiles(baseDir: string, ctx: ExtensionContext) {
-    const gitignoredFiles = Detector.getGitignoredFiles();
+    const gitignoredFiles = this.detector.getGitignoredFiles();
     const projectDir = joinPaths(baseDir, basename(ctx.cwd));
 
     for (const path of gitignoredFiles) {
@@ -94,7 +96,7 @@ export class Impersonator {
     const impersonatingPath = resolvePaths(parentDir, relativePath);
 
     // Create directory if it doesn't exist
-    if (!(await Detector.pathExists(impersonatingPath))) {
+    if (!(await this.detector.pathExists(impersonatingPath))) {
       try {
         await mkdir(impersonatingPath, { recursive: true });
       } catch (error) {
@@ -129,7 +131,7 @@ export class Impersonator {
     const impersonatingPath = resolvePaths(parentDir, relativePath);
 
     // Create file if it doesn't exist
-    if (!(await Detector.pathExists(impersonatingPath))) {
+    if (!(await this.detector.pathExists(impersonatingPath))) {
       try {
         // Ensure parent directories exist first
         const parentDir = resolvePaths(dirname(impersonatingPath));
@@ -235,11 +237,11 @@ export class Impersonator {
 
     // Not yet in the mapper => Dynamic checking
     // We'll need to create the path on-the-fly
-    if (Detector.dynamicCheck(absPath)) {
+    if (this.detector.dynamicCheck(absPath)) {
       const relPath = relative(ctx.cwd, path);
       const projectDir = joinPaths(config.baseDir, basename(ctx.cwd));
 
-      if (Detector.isDirectory(absPath)) {
+      if (this.detector.isDirectory(absPath)) {
         // E.g.: `.vscode/myfolder/` when only `.vscode/` is gitignored)
         this.dirMapper[absPath] = await this.createDirectory(
           relPath,

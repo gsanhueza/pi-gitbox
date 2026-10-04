@@ -1,5 +1,4 @@
 import { ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { Detector } from "./detector";
 import { sendNotification } from "./utils/notifications";
 import { settings } from "./settings";
 
@@ -69,6 +68,7 @@ export const askUserOrBlock = async (
  * @returns The blocked response if any path was denied, or null
  */
 export const checkPathsAccess = async (
+  detector: import("./detector").Detector,
   paths: string[],
   resolvedDirs: string[],
   ctx: ExtensionContext,
@@ -77,8 +77,8 @@ export const checkPathsAccess = async (
   const pending: string[] = [];
 
   for (const path of new Set(paths)) {
-    if (Detector.isPathAllowed(resolvedDirs, path, ctx)) continue;
-    if (skipMissing && !(await Detector.pathExists(path, ctx.cwd))) continue;
+    if (detector.isPathAllowed(resolvedDirs, path, ctx)) continue;
+    if (skipMissing && !(await detector.pathExists(path, ctx.cwd))) continue;
     pending.push(path);
   }
 

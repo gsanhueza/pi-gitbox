@@ -4,16 +4,19 @@ import {
   ToolCallEvent,
   type ExtensionAPI,
 } from "@earendil-works/pi-coding-agent";
+import { execSync } from "child_process";
 import { CommandManager } from "./src/commands";
 import { BASE_ALLOWED_PATHS } from "./src/defaults";
+import { Detector } from "./src/detector";
 import { Gitbox } from "./src/gitbox";
 import { Impersonator } from "./src/impersonator";
 import { checkPathsAccess } from "./src/prompts";
 import { settings } from "./src/settings";
 
 export default async (pi: ExtensionAPI) => {
-  const impersonator = new Impersonator();
-  const gitbox = new Gitbox(impersonator);
+  const detector = new Detector(execSync);
+  const impersonator = new Impersonator(detector);
+  const gitbox = new Gitbox(impersonator, detector);
 
   const commandManager = new CommandManager(gitbox);
 
@@ -47,6 +50,7 @@ export default async (pi: ExtensionAPI) => {
         const skipMissing =
           config.skipMissingPaths && gitbox.isReadOnlyCommand(command);
         const blocked = await checkPathsAccess(
+          detector,
           paths,
           resolvedDirs,
           ctx,
@@ -66,6 +70,7 @@ export default async (pi: ExtensionAPI) => {
         const skipMissing =
           config.skipMissingPaths && !gitbox.isWritingEvent(event);
         const blocked = await checkPathsAccess(
+          detector,
           [path],
           resolvedDirs,
           ctx,

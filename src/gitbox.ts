@@ -11,9 +11,17 @@ import { Detector } from "./detector";
 import { Impersonator } from "./impersonator";
 import { Renderer } from "./renderer";
 import { settings } from "./settings";
+import { StatusStrategy } from "./status-strategy";
 
 export class Gitbox {
-  constructor(private readonly impersonator: Impersonator) {}
+  private readonly statusStrategy: StatusStrategy;
+
+  constructor(
+    private readonly impersonator: Impersonator,
+    private readonly detector: Detector,
+  ) {
+    this.statusStrategy = new StatusStrategy(detector);
+  }
 
   async initialize(ctx: ExtensionContext) {
     await this.verifySettings(ctx);
@@ -158,7 +166,8 @@ export class Gitbox {
     const cwd = basename(ctx.cwd);
 
     const impersonationDir = resolve(baseDir, cwd);
-    if (await Detector.pathExists(impersonationDir)) return impersonationDir;
+    if (await this.detector.pathExists(impersonationDir))
+      return impersonationDir;
 
     try {
       await mkdir(impersonationDir, { recursive: true });
@@ -176,7 +185,7 @@ export class Gitbox {
   private async removeGitbox(ctx: ExtensionContext): Promise<void> {
     const gitboxPath = await this.getOrCreate(ctx);
 
-    if (!(await Detector.pathExists(gitboxPath))) return;
+    if (!(await this.detector.pathExists(gitboxPath))) return;
     try {
       await rm(gitboxPath, { recursive: true });
     } catch (error) {
@@ -196,17 +205,6 @@ export class Gitbox {
    */
   private async getStatus(): Promise<Status> {
     const { config } = await settings.getConfig();
-    const { bypassGitbox } = config;
-
-    // If bypass mode is enabled, return bypassed status
-    if (bypassGitbox) return Status.BYPASSED;
-
-    if (!Detector.isGitAvailable()) return Status.UNAVAILABLE;
-    if (!Detector.isGitProject()) return Status.NOT_REQUIRED;
-
-    const paths = Detector.getGitignoredPaths();
-    if (paths.length === 0) return Status.AVAILABLE;
-
-    return Status.ENABLED;
+    return this.statusStrategy.resolve(config);
   }
 }

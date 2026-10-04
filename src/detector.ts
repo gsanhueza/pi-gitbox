@@ -4,15 +4,38 @@ import { statSync } from "fs";
 import { lstat } from "fs/promises";
 import { normalizePath, PATH_SEP, resolvePaths } from "./compat";
 
-export const Detector = new (class {
+/**
+ * Minimal execSync signature for git commands.
+ */
+type ExecSyncFn = typeof execSync;
+
+/**
+ * Detects environment capabilities for git operations.
+ *
+ * Uses an injectable `execSync` function to allow mocking in tests.
+ *
+ * @example
+ * ```typescript
+ * // Production
+ * import { execSync } from "child_process";
+ * const detector = new Detector(execSync);
+ *
+ * // Tests
+ * const mockExec = vi.fn();
+ * const detector = new Detector(mockExec);
+ * ```
+ */
+export class Detector {
+  constructor(private readonly execFn: ExecSyncFn = execSync) {}
+
   /**
-   * Determines if the user has `git` as a usable command
+   * Determines if the user has `git` as a usable command.
    *
    * @returns True if git exists
    */
   isGitAvailable(): boolean {
     try {
-      execSync("git -v", { stdio: "pipe" });
+      this.execFn("git -v", { stdio: "pipe" });
       return true;
     } catch {
       return false;
@@ -20,12 +43,13 @@ export const Detector = new (class {
   }
 
   /**
-   * Determines if the current working directory is a git repository
+   * Determines if the current working directory is a git repository.
+   *
    * @returns True if it's a git repo
    */
   isGitProject(): boolean {
     try {
-      execSync("git rev-parse --is-inside-work-tree", { stdio: "pipe" });
+      this.execFn("git rev-parse --is-inside-work-tree", { stdio: "pipe" });
       return true;
     } catch {
       return false;
@@ -33,24 +57,24 @@ export const Detector = new (class {
   }
 
   /**
-   * Returns all gitignored files
+   * Returns all gitignored files.
    *
    * @returns Relative paths for files
    */
-  getGitignoredFiles = () => {
+  getGitignoredFiles(): string[] {
     const paths = this.getGitignoredPaths();
     return paths.filter((path) => !this.isDirectory(path));
-  };
+  }
 
   /**
-   * Returns all gitignored directories
+   * Returns all gitignored directories.
    *
    * @returns Relative paths for directories
    */
-  getGitignoredDirectories = () => {
+  getGitignoredDirectories(): string[] {
     const paths = this.getGitignoredPaths();
     return paths.filter(this.isDirectory);
-  };
+  }
 
   /**
    * Runs the git command to get all git-ignored paths (both files and directories).
@@ -62,7 +86,7 @@ export const Detector = new (class {
     try {
       const command =
         "git ls-files --directory --no-empty-directory --others --ignored --exclude-standard";
-      const output = execSync(command, {
+      const output = this.execFn(command, {
         encoding: "utf-8",
         stdio: ["pipe", "pipe", "ignore"],
       });
@@ -71,7 +95,7 @@ export const Detector = new (class {
         .split("\n")
         .filter((line) => line.length > 0);
       return lines;
-    } catch (error) {
+    } catch {
       // Silently ignore if not a git repository
       return [];
     }
@@ -128,7 +152,7 @@ export const Detector = new (class {
   }
 
   /**
-   * Dynamically checks if a path is gitignored
+   * Dynamically checks if a path is gitignored.
    *
    * E.g.: If the `.gitignore` is
    *
@@ -147,7 +171,7 @@ export const Detector = new (class {
   dynamicCheck(path: string): boolean {
     try {
       const command = `git check-ignore ${path}`;
-      execSync(command, {
+      this.execFn(command, {
         encoding: "utf-8",
         stdio: ["pipe", "pipe", "ignore"],
       });
@@ -172,4 +196,4 @@ export const Detector = new (class {
       return false;
     }
   }
-})();
+}
