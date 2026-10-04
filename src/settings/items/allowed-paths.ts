@@ -46,7 +46,7 @@ export class AllowedPathsSettingsItem extends SettingsItem {
    * @param defaults The default GitboxConfig.
    * @returns A partial config with allowedPaths reset.
    */
-  reset(defaults: GitboxConfig): Partial<GitboxConfig> {
+  reset(_defaults: GitboxConfig): Partial<GitboxConfig> {
     return { allowedPaths: [] };
   }
 

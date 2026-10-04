@@ -149,7 +149,7 @@ export abstract class ScalarSettingsItem<T> extends SettingsItem {
    * @param defaults The default GitboxConfig.
    * @returns A partial config with the default value.
    */
-  reset(defaults: GitboxConfig): Partial<GitboxConfig> {
+  reset(_defaults: GitboxConfig): Partial<GitboxConfig> {
     return { [this.options.id]: this.options.default } as Partial<GitboxConfig>;
   }
 

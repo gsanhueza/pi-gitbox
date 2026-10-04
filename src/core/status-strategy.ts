@@ -35,15 +35,15 @@ export class StatusStrategy {
     const conditions: StatusCondition[] = [
       { check: (c) => c.bypassGitbox, status: Status.BYPASSED },
       {
-        check: (c) => !this.detector.isGitAvailable(),
+        check: () => !this.detector.isGitAvailable(),
         status: Status.UNAVAILABLE,
       },
       {
-        check: (c) => !this.detector.isGitProject(),
+        check: () => !this.detector.isGitProject(),
         status: Status.NOT_REQUIRED,
       },
       {
-        check: (c) => this.detector.getGitignoredPaths().length === 0,
+        check: () => this.detector.getGitignoredPaths().length === 0,
         status: Status.AVAILABLE,
       },
     ];

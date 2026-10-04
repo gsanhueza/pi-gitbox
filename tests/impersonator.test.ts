@@ -1,11 +1,14 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Impersonator } from "../src/core/impersonator";
+import { Detector } from "../src/core/detector";
 
 describe("Impersonator", () => {
   let imp: Impersonator;
+  let mockDetector: Detector;
 
   beforeEach(() => {
-    imp = new Impersonator();
+    mockDetector = new Detector(vi.fn());
+    imp = new Impersonator(mockDetector);
   });
 
   describe("extractFromCommand", () => {
