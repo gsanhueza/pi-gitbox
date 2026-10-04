@@ -18,7 +18,7 @@ export default async (pi: ExtensionAPI) => {
   const impersonator = new Impersonator(detector);
   const gitbox = new Gitbox(impersonator, detector);
 
-  const commandManager = new CommandManager(gitbox);
+  const commandManager = new CommandManager(gitbox, impersonator);
 
   // Command registration
   pi.registerCommand("gitbox", {
@@ -48,7 +48,7 @@ export default async (pi: ExtensionAPI) => {
       if (!config.bypassPaths) {
         const paths = await impersonator.extractFromCommand(command);
         const skipMissing =
-          config.skipMissingPaths && gitbox.isReadOnlyCommand(command);
+          config.skipMissingPaths && impersonator.isReadOnlyCommand(command);
         const blocked = await checkPathsAccess(
           detector,
           paths,
@@ -61,7 +61,7 @@ export default async (pi: ExtensionAPI) => {
 
       // Then, impersonate the command
       if (!config.bypassGitbox)
-        event.input.command = await gitbox.resolveCommand(command, ctx);
+        event.input.command = await impersonator.resolveCommand(command, ctx);
     } else if (gitbox.isPathEvent(event)) {
       const { path } = event.input as { path: string };
 
@@ -81,7 +81,7 @@ export default async (pi: ExtensionAPI) => {
 
       // Then, impersonate the path
       if (!config.bypassGitbox)
-        (event.input as { path: string }).path = await gitbox.resolvePath(
+        (event.input as { path: string }).path = await impersonator.resolvePath(
           path,
           ctx,
         );

@@ -11,6 +11,7 @@ import {
 } from "@earendil-works/pi-tui";
 import { GitboxConfig } from "./config/types";
 import { Gitbox } from "./gitbox";
+import { Impersonator } from "./core/impersonator";
 import { settings } from "./settings";
 import { AllowedPathsSettingsItem } from "./settings/items/allowed-paths";
 import { SETTINGS_ITEMS } from "./settings/defaults";
@@ -43,7 +44,10 @@ export class CommandManager {
   /** Theme instance (from the ctx.ui.custom factory) for dialogs. */
   private theme: Theme | null = null;
 
-  constructor(private readonly gitbox: Gitbox) {}
+  constructor(
+    private readonly gitbox: Gitbox,
+    private readonly impersonator: Impersonator,
+  ) {}
 
   /**
    * Sets up the argument completions for the `/gitbox` command
@@ -105,8 +109,8 @@ export class CommandManager {
    * @param ctx The extension context
    */
   private async runGitboxPaths(ctx: ExtensionCommandContext): Promise<void> {
-    const fileMapper = this.gitbox.getFileMapper(ctx);
-    const dirMapper = this.gitbox.getDirMapper(ctx);
+    const fileMapper = this.impersonator.getFileMapper(ctx.cwd);
+    const dirMapper = this.impersonator.getDirMapper(ctx.cwd);
 
     const lines = Object.entries({ ...fileMapper, ...dirMapper })
       .map(([source, target]) => {
