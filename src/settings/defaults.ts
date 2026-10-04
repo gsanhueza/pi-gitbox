@@ -5,7 +5,6 @@ import { BypassGitboxSettingsItem } from "./items/bypass-gitbox";
 import { BypassPathsSettingsItem } from "./items/bypass-paths";
 import { DeleteOnExitSettingsItem } from "./items/delete-on-exit";
 import { ImpersonateDirsSettingsItem } from "./items/impersonate-dirs";
-import { SkipMissingPathsSettingsItem } from "./items/skip-missing-paths";
 import { StatusBarSettingsItem } from "./items/status-bar";
 import { SystemNotificationsSettingsItem } from "./items/system-notifications";
 
@@ -21,7 +20,6 @@ export const SETTINGS_ITEMS: Record<string, SettingsItem> = {
   impersonateDirs: new ImpersonateDirsSettingsItem(),
   bypassGitbox: new BypassGitboxSettingsItem(),
   bypassPaths: new BypassPathsSettingsItem(),
-  skipMissingPaths: new SkipMissingPathsSettingsItem(),
   systemNotifications: new SystemNotificationsSettingsItem(),
   baseDir: new BaseDirSettingsItem(),
   allowedPaths: new AllowedPathsSettingsItem(),

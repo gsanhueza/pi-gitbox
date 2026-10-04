@@ -39,26 +39,27 @@ describe("Impersonator", () => {
       expect(result).not.toContain("&&");
     });
 
-    it("does not extract command flags", async () => {
+    it("extracts command flags as tokens", async () => {
       const result = await imp.extractFromCommand("ls -la -R");
-      expect(result).toEqual(["ls"]);
+      expect(result).toContain("-la");
+      expect(result).toContain("-R");
     });
 
-    it("does not extract URLs", async () => {
+    it("extracts URLs as tokens", async () => {
       const result = await imp.extractFromCommand(
         "curl https://example.com/file.txt",
       );
       expect(result).toContain("curl");
-      expect(result).not.toContain("https://example.com/file.txt");
+      expect(result).toContain("https://example.com/file.txt");
     });
 
-    it("does not extract environment variable assignments", async () => {
+    it("extracts environment variable assignments as tokens", async () => {
       const result = await imp.extractFromCommand(
         "NODE_ENV=production node app.js",
       );
       expect(result).toContain("node");
       expect(result).toContain("app.js");
-      expect(result).not.toContain("NODE_ENV=production");
+      expect(result).toContain("NODE_ENV=production");
     });
 
     it("handles mixed paths and globs", async () => {
@@ -81,74 +82,13 @@ describe("Impersonator", () => {
       expect(result).toEqual([]);
     });
 
-    it("rejects shell reserved words", async () => {
+    it("extracts shell reserved words as tokens", async () => {
       const result = await imp.extractFromCommand("if true then else fi");
-      expect(result).not.toContain("true");
-      expect(result).not.toContain("then");
-      expect(result).not.toContain("else");
-      expect(result).not.toContain("fi");
-    });
-  });
-
-  describe("isReadOnlyCommand", () => {
-    it("accepts a simple read-only command", () => {
-      expect(imp.isReadOnlyCommand("cat file.txt")).toBe(true);
-    });
-
-    it("accepts piped read-only commands", () => {
-      expect(imp.isReadOnlyCommand("ls | grep pattern")).toBe(true);
-    });
-
-    it("accepts chained read-only commands", () => {
-      expect(imp.isReadOnlyCommand("ls && cat file.txt")).toBe(true);
-    });
-
-    it("accepts read-only commands with globs", () => {
-      expect(imp.isReadOnlyCommand("ls *.ts")).toBe(true);
-    });
-
-    it("rejects output redirection", () => {
-      expect(imp.isReadOnlyCommand("cat file.txt > /tmp/output")).toBe(false);
-    });
-
-    it("rejects stderr redirection", () => {
-      expect(imp.isReadOnlyCommand("cat file.txt 2>/dev/null")).toBe(false);
-    });
-
-    it("rejects command substitution", () => {
-      expect(imp.isReadOnlyCommand("echo $(whoami)")).toBe(false);
-    });
-
-    it("rejects sudo prefix", () => {
-      expect(imp.isReadOnlyCommand("sudo cat /etc/shadow")).toBe(false);
-    });
-
-    it("rejects non-read-only programs", () => {
-      expect(imp.isReadOnlyCommand("bash -c 'cat /etc/shadow'")).toBe(false);
-    });
-
-    it("rejects subshells", () => {
-      expect(imp.isReadOnlyCommand("(cat file.txt)")).toBe(false);
-    });
-
-    it("rejects relative program paths", () => {
-      expect(imp.isReadOnlyCommand("./cat file.txt")).toBe(false);
-    });
-
-    it("rejects absolute program paths", () => {
-      expect(imp.isReadOnlyCommand("/usr/bin/cat file.txt")).toBe(false);
-    });
-
-    it("rejects mixed read-only and write commands", () => {
-      expect(imp.isReadOnlyCommand("cat file.txt; rm -rf /")).toBe(false);
-    });
-
-    it("rejects empty command", () => {
-      expect(imp.isReadOnlyCommand("")).toBe(false);
-    });
-
-    it("rejects environment variable assignments", () => {
-      expect(imp.isReadOnlyCommand("FOO=1 cat file.txt")).toBe(false);
+      expect(result).toContain("if");
+      expect(result).toContain("true");
+      expect(result).toContain("then");
+      expect(result).toContain("else");
+      expect(result).toContain("fi");
     });
   });
 });

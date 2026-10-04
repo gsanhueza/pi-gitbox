@@ -37,22 +37,7 @@ describe("checkPathsAccess", () => {
     expect(pathExistsSpy).not.toHaveBeenCalled();
   });
 
-  it("skipMissing=false: missing path outside allowed dirs blocks", async () => {
-    vi.spyOn(detector, "isPathAllowed").mockReturnValue(false);
-    vi.spyOn(detector, "pathExists").mockResolvedValue(false);
-
-    const result = await checkPathsAccess(
-      detector,
-      ["/etc/shadow"],
-      resolvedDirs,
-      mockCtx,
-      false,
-    );
-    expect(result).not.toBeNull();
-    expect(result!.block).toBe(true);
-  });
-
-  it("skipMissing=true: missing path outside allowed dirs is skipped", async () => {
+  it("missing path with no existing parent is skipped", async () => {
     vi.spyOn(detector, "isPathAllowed").mockReturnValue(false);
     vi.spyOn(detector, "pathExists").mockResolvedValue(false);
 
@@ -61,12 +46,27 @@ describe("checkPathsAccess", () => {
       ["/nonexistent/path"],
       resolvedDirs,
       mockCtx,
-      true,
     );
     expect(result).toBeNull();
   });
 
-  it("skipMissing=true: existing path outside allowed dirs still blocks", async () => {
+  it("existing parent prompts for the parent", async () => {
+    vi.spyOn(detector, "isPathAllowed").mockReturnValue(false);
+    vi.spyOn(detector, "pathExists").mockImplementation(async (path: string) =>
+      path === "/nonexistent" ? true : false,
+    );
+
+    const result = await checkPathsAccess(
+      detector,
+      ["/nonexistent/path"],
+      resolvedDirs,
+      mockCtx,
+    );
+    expect(result).not.toBeNull();
+    expect(result!.block).toBe(true);
+  });
+
+  it("full path exists prompts for the full path", async () => {
     vi.spyOn(detector, "isPathAllowed").mockReturnValue(false);
     vi.spyOn(detector, "pathExists").mockResolvedValue(true);
 
@@ -75,7 +75,6 @@ describe("checkPathsAccess", () => {
       ["/etc/shadow"],
       resolvedDirs,
       mockCtx,
-      true,
     );
     expect(result).not.toBeNull();
     expect(result!.block).toBe(true);
@@ -85,13 +84,7 @@ describe("checkPathsAccess", () => {
     vi.spyOn(detector, "isPathAllowed").mockReturnValue(false);
     vi.spyOn(detector, "pathExists").mockResolvedValue(false);
 
-    await checkPathsAccess(
-      detector,
-      ["/a", "/a", "/b"],
-      resolvedDirs,
-      mockCtx,
-      true,
-    );
+    await checkPathsAccess(detector, ["/a", "/a", "/b"], resolvedDirs, mockCtx);
     // pathExists called once per unique path
     expect(detector.pathExists).toHaveBeenCalledTimes(2);
   });

@@ -47,14 +47,11 @@ export default async (pi: ExtensionAPI) => {
       // First, scan if we can even access the paths
       if (!config.bypassPaths) {
         const paths = await impersonator.extractFromCommand(command);
-        const skipMissing =
-          config.skipMissingPaths && impersonator.isReadOnlyCommand(command);
         const blocked = await checkPathsAccess(
           detector,
           paths,
           resolvedDirs,
           ctx,
-          skipMissing,
         );
         if (blocked) return blocked;
       }
@@ -67,14 +64,11 @@ export default async (pi: ExtensionAPI) => {
 
       // First, scan if we can even access the paths
       if (!config.bypassPaths) {
-        const skipMissing =
-          config.skipMissingPaths && !gitbox.isWritingEvent(event);
         const blocked = await checkPathsAccess(
           detector,
           [path],
           resolvedDirs,
           ctx,
-          skipMissing,
         );
         if (blocked) return blocked;
       }

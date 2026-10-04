@@ -28,7 +28,6 @@ enum Options {
   IMPERSONATE_DIRS = "impersonateDirs",
   BYPASS_GITBOX = "bypassGitbox",
   BYPASS_PATHS = "bypassPaths",
-  SKIP_MISSING_PATHS = "skipMissingPaths",
 }
 
 /**

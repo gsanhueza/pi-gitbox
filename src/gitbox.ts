@@ -63,16 +63,6 @@ export class Gitbox {
   }
 
   /**
-   * Determines if the event is a writing tool call (write, edit)
-   * @param event The event
-   * @returns True if the event writes to disk
-   */
-  isWritingEvent(event: ToolCallEvent): boolean {
-    const writeTools = ["write", "edit"];
-    return writeTools.some((tool) => isToolCallEventType(tool, event));
-  }
-
-  /**
    * Validates the configuration settings
    *
    * @param ctx The extension context

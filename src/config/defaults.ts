@@ -18,11 +18,6 @@ export const GITBOX_BASEDIR = join(getAgentDir(), "gitbox");
 export const TEMPORAL_GITBOX = tmpdir();
 
 /**
- * Default for system notifications setting.
- */
-export const SYSTEM_NOTIFICATIONS_DEFAULT = true;
-
-/**
  * Default paths that are always allowed.
  */
 export const BASE_ALLOWED_PATHS: string[] = [

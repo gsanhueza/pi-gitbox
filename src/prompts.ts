@@ -1,7 +1,9 @@
 import { ExtensionContext } from "@earendil-works/pi-coding-agent";
+import { dirname } from "node:path";
 import { sendNotification } from "./utils/notifications";
 import { settings } from "./settings";
 import { Detector } from "./core/detector";
+import { normalizePath, resolvePaths } from "./utils/compat";
 
 /**
  * Prompt options
@@ -56,16 +58,40 @@ export const askUserOrBlock = async (
 };
 
 /**
+ * Finds the deepest existing ancestor of a path by walking up from the
+ * full path through each parent directory until root.
+ *
+ * @param path The path to check
+ * @param cwd Working directory to resolve relative paths against
+ * @param detector The detector instance for existence checks
+ * @returns The deepest existing path, or null if nothing exists
+ */
+const findDeepestExistingParent = async (
+  path: string,
+  cwd: string,
+  detector: Detector,
+): Promise<string | null> => {
+  let current = resolvePaths(cwd, normalizePath(path));
+
+  while (current !== "/") {
+    if (await detector.pathExists(current, cwd)) {
+      return current;
+    }
+    current = dirname(current);
+  }
+
+  return null;
+};
+
+/**
  * Checks if all paths are allowed, prompting the user if needed.
  *
- * When `skipMissing` is true, paths that are outside the allowed dirs
- * but do not exist on disk are silently skipped (noise reduction).
- * Paths that DO exist always prompt as usual.
+ * For paths outside allowed directories, finds the deepest existing
+ * ancestor and prompts for that. If nothing exists, silently skips.
  *
  * @param paths Paths to check
  * @param resolvedDirs Allowed directories
  * @param ctx The extension context
- * @param skipMissing If true, skip non-existing paths outside allowed dirs
  * @returns The blocked response if any path was denied, or null
  */
 export const checkPathsAccess = async (
@@ -73,14 +99,16 @@ export const checkPathsAccess = async (
   paths: string[],
   resolvedDirs: string[],
   ctx: ExtensionContext,
-  skipMissing: boolean = false,
 ): Promise<{ block: boolean; reason?: string } | null> => {
   const pending: string[] = [];
 
   for (const path of new Set(paths)) {
     if (detector.isPathAllowed(resolvedDirs, path, ctx)) continue;
-    if (skipMissing && !(await detector.pathExists(path, ctx.cwd))) continue;
-    pending.push(path);
+
+    const deepest = await findDeepestExistingParent(path, ctx.cwd, detector);
+    if (deepest) {
+      pending.push(deepest);
+    }
   }
 
   for (const path of pending) {

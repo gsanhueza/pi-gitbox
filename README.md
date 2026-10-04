@@ -3,8 +3,6 @@
 A [Pi Coding Agent](https://pi.dev/) extension that automatically redirects gitignored files and directories into an isolated **gitbox** — a local impersonation layer that makes them accessible to the AI agent without exposing your secrets. (_"gitbox"_ is a portmanteau of _"git"_ + _"sandbox"_.)
 
 > **⚠️ DISCLAIMER:** This extension uses best-effort impersonation of gitignored paths. It is **your responsibility** to verify that secrets are not exposed to the agent. If absolute isolation is required, consider using a local model, [bubblewrap](https://github.com/containers/bubblewrap), or a fully isolated environment.
->
-> Prompt suppression (via `skipMissingPaths`) is best-effort noise reduction, **not** a security isolation mechanism. It should not be relied upon to protect sensitive paths.
 
 ## Security considerations
 
@@ -18,13 +16,13 @@ After enabling gitbox, verify that impersonations are working correctly:
 - **Gitignored file impersonation** — gitignored files are automatically mirrored into a private gitbox directory
 - **Directory impersonation** — gitignored directories can also be mirrored (opt-in)
 - **Command & path interception** — bash commands and file operations (read, edit, write, find, grep, ls) are internally redirected to the impersonated paths
-- **Directory access control** — restricts agent access to allowed directories by default; prompts for approval when accessing paths outside the allowed list
+- **Directory access control** — restricts agent access to allowed directories by default; prompts for approval when accessing paths outside the allowed list (finding the deepest existing ancestor to prompt for)
 - **Configurable directory bypass** — optionally disable directory restrictions
 - **Status bar indicators** — color-coded status showing whether the gitbox is enabled, available, not required, unavailable or bypassed
 - **Auto cleanup** — optionally delete the gitbox when the session exits
 - **System notifications** — show desktop notifications when user interaction is needed (Linux only)
 
-> **Note on directory impersonation:** By default, only gitignored files are impersonated. Enabling `impersonateDirs` also mirrors directories into the gitbox. This is useful when you want the agent to operate on the project without disrupting your current folders — for example, a Node project with `node_modules/` ignored by git can be used from the working directory (when `impersonateDirs: false`), or can be recreated to be available in the gitbox instead (when `impersonateDirs: true`).
+> **Note on directory impersonation:** By default, only gitignored files are impersonated. Enabling `impersonateDirs` also mirrors directories into the gitbox. This is useful when you want the agent to operate on the project without disrupting your current folders — for example, a Node project with `node_modules/` ignored by git can be used from the working directory (when `impersonateDirs: false`), or can be recreated to be available in the gitbox instead (when `impersonateDirs: true`). The dynamic fallback also creates both files and directories on-the-fly when they're encountered but weren't detected during initialization.
 
 ## Status Bar
 
@@ -33,7 +31,7 @@ The status bar displays `📦 Gitbox:` followed by the current status:
 | Status       | Meaning                                         | Color              |
 | ------------ | ----------------------------------------------- | ------------------ |
 | Enabled      | Gitbox active — gitignored paths exist          | `#00ff88` (green)  |
-| Available    | Gitbox created but no gitignored paths detected | `#ffaa00` (orange) |
+| Available    | Gitbox created but no gitignored paths detected | `#ffaa00` (amber)  |
 | Not required | Current directory is not a git repository       | `#ff8800` (orange) |
 | Unavailable  | `git` command not found                         | `#ff4444` (red)    |
 | Bypassed     | Impersonation disabled by configuration         | `#44ddff` (cyan)   |
@@ -67,7 +65,6 @@ You can customize Gitbox options via the interactive menu (`/gitbox`) for common
     "impersonateDirs": false,
     "bypassGitbox": false,
     "bypassPaths": false,
-    "skipMissingPaths": false,
     "systemNotifications": true,
     "allowedPaths": []
   }
@@ -76,17 +73,16 @@ You can customize Gitbox options via the interactive menu (`/gitbox`) for common
 
 ### Configuration Options
 
-| Option                | Type          | Default              | Description                                                                                             |
-| --------------------- | ------------- | -------------------- | ------------------------------------------------------------------------------------------------------- |
-| `baseDir`             | string (enum) | `~/.pi/agent/gitbox` | Base directory where gitboxes are created. Menu offers "Agent directory" or "Temporal folder".          |
-| `statusBar`           | boolean       | `true`               | Show gitbox status in the status bar                                                                    |
-| `deleteOnExit`        | boolean       | `false`              | Delete the gitbox when the session exits                                                                |
-| `impersonateDirs`     | boolean       | `false`              | Also impersonate gitignored directories                                                                 |
-| `bypassGitbox`        | boolean       | `false`              | Skip impersonation of gitignored paths                                                                  |
-| `bypassPaths`         | boolean       | `false`              | Bypass path access restrictions entirely                                                                |
-| `skipMissingPaths`    | boolean       | `false`              | Only prompt for paths that exist on disk. `write`/`edit` and non-read-only bash commands always prompt. |
-| `systemNotifications` | boolean       | `true`               | Show system notifications (via `notify-send`) when user interaction is needed (Linux only)              |
-| `allowedPaths`        | string[]      | `[]`                 | Additional paths to allow access to                                                                     |
+| Option                | Type     | Default              | Description                                   |
+| --------------------- | -------- | -------------------- | --------------------------------------------- |
+| `baseDir`             | string   | `~/.pi/agent/gitbox` | Base directory where gitboxes are created.    |
+| `statusBar`           | boolean  | `true`               | Show gitbox status in the status bar          |
+| `deleteOnExit`        | boolean  | `false`              | Delete the gitbox when the session exits      |
+| `impersonateDirs`     | boolean  | `false`              | Also impersonate gitignored directories       |
+| `bypassGitbox`        | boolean  | `false`              | Skip impersonation of gitignored paths        |
+| `bypassPaths`         | boolean  | `false`              | Bypass path access restrictions entirely      |
+| `systemNotifications` | boolean  | `true`               | Show system notifications (via `notify-send`) |
+| `allowedPaths`        | string[] | `[]`                 | Additional paths to allow access to           |
 
 > **Note:** The interactive menu (`/gitbox`) exposes boolean keys, a dropdown for `baseDir` and an interactive editor for `allowedPaths`. For a fully custom `baseDir` path, edit `settings.json` directly.
 
@@ -125,13 +121,7 @@ Options:
 
 Set `bypassPaths: true` to skip this check entirely.
 
-When `skipMissingPaths` is enabled, paths that are outside the allowed directories **but do not exist on disk** are silently skipped. This reduces noise from search patterns (e.g. `grep "/api/v1" src/`) and program names being mistaken for paths. The setting is off by default and has the following safety guarantees:
-
-- **Writes always prompt**: the filter never applies to `write`/`edit` tools, nor to bash commands that are not entirely read-only.
-- **Existing files always prompt**: a path that exists on disk is never skipped, even if the command is read-only.
-- **`bypassPaths: true` wins**: when directory restrictions are fully bypassed, `skipMissingPaths` is a no-op.
-
-Read-only bash detection uses a fixed built-in list of programs (`cat`, `grep`, `ls`, `find`, `rg`, `head`, `tail`, `stat`, `diff`, etc.) that only read the paths given to them. Any command with output redirection (`>`, `>>`), command substitution (`$(...)`), subshells, `sudo`, or programs not in the list is treated as potentially write-capable and always prompts as usual. The list is not configurable.
+For any path outside the allowed directories, the extension finds the deepest existing ancestor (full path → parent → grandparent → … → root) and prompts for that. If nothing in the chain exists, the access is silently skipped. This applies uniformly to all commands and path-based tools—there is no distinction between read-only and write operations.
 
 > **Note:** When Pi doesn't have access to a UI, access will be automatically blocked.
 
@@ -151,7 +141,7 @@ Read-only bash detection uses a fixed built-in list of programs (`cat`, `grep`, 
 5. **Event Interception** — On every `tool_call` event:
    - **Bash commands** — Extracts paths from the command using `shell-quote`, checks directory restrictions, then rewrites paths to their impersonated versions
    - **Path-based tools** (read, edit, write, find, grep, ls) — Checks directory restrictions, then resolves the path to its impersonated equivalent
-   - **Dynamic fallback** — For paths within gitignored directories that weren't explicitly detected during initialization (e.g., nested files inside an ignored directory), the extension performs a real-time `git check-ignore` lookup and creates the impersonation on the fly. Files are explicitly detected during initialization, so this fallback is primarily useful for directories
+   - **Dynamic fallback** — For paths within gitignored directories that weren't explicitly detected during initialization (e.g., nested files inside an ignored directory), the extension performs a real-time `git check-ignore` lookup and creates the impersonation on the fly, creating both files and directories as needed
 6. **Status Bar** — Updates the status bar with the current gitbox state (enabled, available, not required, or unavailable)
 7. **Session Shutdown** — Optionally removes the gitbox directory if `deleteOnExit` is enabled
 
