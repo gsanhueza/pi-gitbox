@@ -9,10 +9,10 @@ import { normalizePath, resolvePaths } from "./utils/compat";
  * Prompt options
  */
 enum Options {
-  ALLOW = "Allow",
-  DENY = "Deny",
+  ALLOW_ONCE = "Allow once",
   BYPASS_SESSION = "Bypass (session only)",
   BYPASS_SAVE = "Bypass (saved globally)",
+  CANCEL = "Cancel",
 }
 
 /**
@@ -42,15 +42,20 @@ export const askUserOrBlock = async (
     await sendNotification(`Allow "${path}" to be accessed?`);
   }
 
-  const allowed = await ctx.ui.select(prompt, Object.values(Options));
+  const selected = await ctx.ui.select(prompt, Object.values(Options));
 
-  // Process the selected option
-  if (!allowed || allowed === Options.DENY) return { block: true, reason };
+  // Cancel is equivalent to deny
+  if (!selected || selected === Options.CANCEL) return { block: true, reason };
+
+  // Handle allow once
+  if (selected === Options.ALLOW_ONCE) {
+    return { block: false };
+  }
 
   // Handle the bypass options.
-  if (allowed === Options.BYPASS_SESSION) {
+  if (selected === Options.BYPASS_SESSION) {
     config.allowedPaths = [...config.allowedPaths, path];
-  } else if (allowed === Options.BYPASS_SAVE) {
+  } else if (selected === Options.BYPASS_SAVE) {
     await settings.setConfig({ allowedPaths: [...config.allowedPaths, path] });
   }
 
