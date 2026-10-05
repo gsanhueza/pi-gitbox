@@ -55,9 +55,7 @@ export class Impersonator {
       const impersonation = await this.createDirectory(path, projectDir);
       const absPath = resolvePaths(cwd, path);
 
-      if (impersonation) {
-        this.dirMapper[absPath] = impersonation;
-      }
+      this.dirMapper[absPath] = impersonation;
     }
   }
 
@@ -75,9 +73,7 @@ export class Impersonator {
       const impersonation = await this.createFile(path, projectDir);
       const absPath = resolvePaths(cwd, path);
 
-      if (impersonation) {
-        this.fileMapper[absPath] = impersonation;
-      }
+      this.fileMapper[absPath] = impersonation;
     }
   }
 
