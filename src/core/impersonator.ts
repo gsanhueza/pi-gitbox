@@ -5,10 +5,13 @@ import type { GlobPattern } from "shell-quote";
 import { parse } from "shell-quote";
 import { joinPaths, resolvePaths } from "../utils/compat";
 import { Detector } from "./detector";
-import { settings } from "../settings";
+import { Settings } from "../settings";
 
 export class Impersonator {
-  constructor(private readonly detector: Detector) {}
+  constructor(
+    private readonly detector: Detector,
+    private readonly settings: Settings,
+  ) {}
 
   private fileMapper: Record<string, string> = {};
   private dirMapper: Record<string, string> = {};
@@ -24,17 +27,17 @@ export class Impersonator {
   /**
    * Fills the mapper with paths that are gitignored
    *
-   * @param ctx The extension context
+   * @param ctx The context containing cwd
    */
   async initialize(ctx: ExtensionContext): Promise<void> {
     this.fileMapper = {};
     this.dirMapper = {};
-    const { config } = await settings.getConfig();
+    const { config } = await this.settings.getConfig();
 
-    await this.initializeFiles(config.baseDir, ctx);
+    await this.initializeFiles(config.baseDir, ctx.cwd);
 
     if (config.impersonateDirs) {
-      await this.initializeDirectories(config.baseDir, ctx);
+      await this.initializeDirectories(config.baseDir, ctx.cwd);
     }
   }
 
@@ -42,17 +45,15 @@ export class Impersonator {
    * Initializes the mapper for directories
    *
    * @param baseDir Gitbox basedir
-   * @param ctx The extension context
+   * @param cwd The current working directory
    */
-  private async initializeDirectories(baseDir: string, ctx: ExtensionContext) {
-    const gitignoredDirectories = this.detector.getGitignoredDirectories(
-      ctx.cwd,
-    );
-    const projectDir = joinPaths(baseDir, basename(ctx.cwd));
+  private async initializeDirectories(baseDir: string, cwd: string) {
+    const gitignoredDirectories = this.detector.getGitignoredDirectories(cwd);
+    const projectDir = joinPaths(baseDir, basename(cwd));
 
     for (const path of gitignoredDirectories) {
-      const impersonation = await this.createDirectory(path, projectDir, ctx);
-      const absPath = resolvePaths(ctx.cwd, path);
+      const impersonation = await this.createDirectory(path, projectDir);
+      const absPath = resolvePaths(cwd, path);
 
       if (impersonation) {
         this.dirMapper[absPath] = impersonation;
@@ -64,15 +65,15 @@ export class Impersonator {
    * Initializes the mapper for files
    *
    * @param baseDir Gitbox basedir
-   * @param ctx The extension context
+   * @param cwd The current working directory
    */
-  private async initializeFiles(baseDir: string, ctx: ExtensionContext) {
-    const gitignoredFiles = this.detector.getGitignoredFiles(ctx.cwd);
-    const projectDir = joinPaths(baseDir, basename(ctx.cwd));
+  private async initializeFiles(baseDir: string, cwd: string) {
+    const gitignoredFiles = this.detector.getGitignoredFiles(cwd);
+    const projectDir = joinPaths(baseDir, basename(cwd));
 
     for (const path of gitignoredFiles) {
-      const impersonation = await this.createFile(path, projectDir, ctx);
-      const absPath = resolvePaths(ctx.cwd, path);
+      const impersonation = await this.createFile(path, projectDir);
+      const absPath = resolvePaths(cwd, path);
 
       if (impersonation) {
         this.fileMapper[absPath] = impersonation;
@@ -85,13 +86,11 @@ export class Impersonator {
    *
    * @param relativePath The original path
    * @param parentDir The parent path to use with relativePath
-   * @param ctx The extension context
    * @returns Absolute path to impersonated directory
    */
   private async createDirectory(
     relativePath: string,
     parentDir: string,
-    ctx: ExtensionContext,
   ): Promise<string> {
     // Setup the gitbox for the project
     const impersonatingPath = resolvePaths(parentDir, relativePath);
@@ -100,11 +99,7 @@ export class Impersonator {
     if (!(await this.detector.pathExists(impersonatingPath))) {
       try {
         await mkdir(impersonatingPath, { recursive: true });
-      } catch (error) {
-        ctx.ui.notify(
-          `Failed to create impersonated directory: ${error}`,
-          "error",
-        );
+      } catch {
         return relativePath;
       }
     }
@@ -117,13 +112,11 @@ export class Impersonator {
    *
    * @param relativePath The original path
    * @param parentDir The parent path to use with relativePath
-   * @param ctx The extension context
    * @returns Absolute path to impersonated file
    */
   private async createFile(
     relativePath: string,
     parentDir: string,
-    ctx: ExtensionContext,
   ): Promise<string> {
     // Create the impersonated file
     const content = relativePath.endsWith(".json") ? "{}" : " ";
@@ -135,12 +128,11 @@ export class Impersonator {
     if (!(await this.detector.pathExists(impersonatingPath))) {
       try {
         // Ensure parent directories exist first
-        const parentDir = resolvePaths(dirname(impersonatingPath));
-        await mkdir(parentDir, { recursive: true });
+        const fileParentDir = resolvePaths(dirname(impersonatingPath));
+        await mkdir(fileParentDir, { recursive: true });
 
         await writeFile(impersonatingPath, content);
-      } catch (error) {
-        ctx.ui.notify(`Failed to create impersonated file: ${error}`, "error");
+      } catch {
         return relativePath;
       }
     }
@@ -190,15 +182,15 @@ export class Impersonator {
    * Impersonates the bash command, if possible
    *
    * @param cmd The bash command whose paths will be impersonated
-   * @param ctx The extension context
+   * @param cwd The current working directory
    * @returns The command with impersonated paths
    */
-  async resolveCommand(cmd: string, ctx: ExtensionContext): Promise<string> {
+  async resolveCommand(cmd: string, cwd: string): Promise<string> {
     const paths = await this.extractFromCommand(cmd);
 
     let response = cmd;
     for (const path of paths) {
-      const impersonation = await this.resolvePath(path, ctx);
+      const impersonation = await this.resolvePath(path, cwd);
       response = response.replace(path, impersonation);
     }
 
@@ -209,17 +201,17 @@ export class Impersonator {
    * Impersonates the path, if possible
    *
    * @param path The path to be impersonated
-   * @param ctx The extension context
+   * @param cwd The current working directory
    * @returns The impersonated path, if available
    */
-  async resolvePath(path: string, ctx: ExtensionContext): Promise<string> {
-    const absPath = resolvePaths(ctx.cwd, path);
+  async resolvePath(path: string, cwd: string): Promise<string> {
+    const absPath = resolvePaths(cwd, path);
 
     // Check file mapper first
     if (this.fileMapper[absPath]) return this.fileMapper[absPath];
 
     // Check directory mapper only if impersonateDirs is enabled
-    const { config } = await settings.getConfig();
+    const { config } = await this.settings.getConfig();
     if (!config.impersonateDirs) return path;
 
     // Check existence in dirMapper
@@ -227,25 +219,20 @@ export class Impersonator {
 
     // Not yet in the mapper => Dynamic checking
     // We'll need to create the path on-the-fly
-    if (this.detector.dynamicCheck(absPath, ctx.cwd)) {
-      const relPath = relative(ctx.cwd, path);
-      const projectDir = joinPaths(config.baseDir, basename(ctx.cwd));
+    if (this.detector.dynamicCheck(absPath, cwd)) {
+      const relPath = relative(cwd, path);
+      const projectDir = joinPaths(config.baseDir, basename(cwd));
 
       if (this.detector.isDirectory(absPath)) {
         // E.g.: `.vscode/myfolder/` when only `.vscode/` is gitignored)
         this.dirMapper[absPath] = await this.createDirectory(
           relPath,
           projectDir,
-          ctx,
         );
         return this.dirMapper[absPath];
       } else {
         // E.g.: `.vscode/launch.json` when only `.vscode/` is gitignored)
-        this.fileMapper[absPath] = await this.createFile(
-          relPath,
-          projectDir,
-          ctx,
-        );
+        this.fileMapper[absPath] = await this.createFile(relPath, projectDir);
         return this.fileMapper[absPath];
       }
     }

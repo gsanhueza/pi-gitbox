@@ -1,14 +1,104 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Impersonator } from "../src/core/impersonator";
 import { Detector } from "../src/core/detector";
+import { Settings } from "../src/settings";
 
 describe("Impersonator", () => {
   let imp: Impersonator;
   let mockDetector: Detector;
 
+  let mockSettings: Settings;
+
   beforeEach(() => {
     mockDetector = new Detector(vi.fn());
-    imp = new Impersonator(mockDetector);
+    mockSettings = {
+      getConfig: vi.fn().mockResolvedValue({
+        config: { impersonateDirs: true, baseDir: "/gitbox" },
+        errors: [],
+      }),
+    } as unknown as Settings;
+    imp = new Impersonator(mockDetector, mockSettings);
+  });
+
+  describe("pathMapper", () => {
+    it("combines file and directory mappers", () => {
+      // Access private fields via any to set up test state
+      (imp as any).fileMapper = { "/abs/src": "/gitbox/src" };
+      (imp as any).dirMapper = { "/abs/node_modules": "/gitbox/node_modules" };
+      expect(imp.pathMapper).toEqual({
+        "/abs/src": "/gitbox/src",
+        "/abs/node_modules": "/gitbox/node_modules",
+      });
+    });
+
+    it("returns empty object when both mappers are empty", () => {
+      (imp as any).fileMapper = {};
+      (imp as any).dirMapper = {};
+      expect(imp.pathMapper).toEqual({});
+    });
+  });
+
+  describe("stripGlobPattern", () => {
+    it("strips trailing * from path", async () => {
+      const result = await imp.extractFromCommand("ls dist/*");
+      expect(result).toContain("dist");
+    });
+
+    it("returns empty string for bare *", async () => {
+      const result = await imp.extractFromCommand("ls *");
+      expect(result).not.toContain("");
+    });
+
+    it("returns unchanged path without glob", async () => {
+      const result = await imp.extractFromCommand("ls file.txt");
+      expect(result).toContain("file.txt");
+    });
+
+    it("strips path before last / in nested glob", async () => {
+      const result = await imp.extractFromCommand("ls src/**/*");
+      expect(result).toContain("src");
+    });
+  });
+
+  describe("buildMapper", () => {
+    it("converts absolute paths to relative", () => {
+      const mapper = {
+        "/home/user/project/src": "/gitbox/project/src",
+        "/home/user/project/lib": "/gitbox/project/lib",
+      };
+      const result = (imp as any).buildMapper(mapper, "/home/user/project");
+      expect(result).toEqual({
+        src: "/gitbox/project/src",
+        lib: "/gitbox/project/lib",
+      });
+    });
+
+    it("returns empty object for empty input", () => {
+      const result = (imp as any).buildMapper({}, "/base");
+      expect(result).toEqual({});
+    });
+  });
+
+  describe("getFileMapper", () => {
+    it("returns file mapper with relative sources", () => {
+      (imp as any).fileMapper = {
+        "/home/user/project/src": "/gitbox/project/src",
+      };
+      const result = imp.getFileMapper("/home/user/project");
+      expect(result).toEqual({ src: "/gitbox/project/src" });
+    });
+  });
+
+  describe("getDirMapper", () => {
+    it("returns directory mapper with relative sources", () => {
+      (imp as any).dirMapper = {
+        "/home/user/project/node_modules": "/gitbox/project/node_modules",
+      };
+      const result = imp.getDirMapper("/home/user/project");
+      expect(result).toEqual({
+        node_modules: "/gitbox/project/node_modules",
+      });
+    });
   });
 
   describe("extractFromCommand", () => {

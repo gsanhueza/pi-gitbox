@@ -10,7 +10,7 @@ import { GitboxConfig, Status } from "./config/types";
 import { Detector } from "./core/detector";
 import { Impersonator } from "./core/impersonator";
 import { Renderer } from "./renderer";
-import { settings } from "./settings";
+import { Settings } from "./settings";
 import { StatusStrategy } from "./core/status-strategy";
 
 export class Gitbox {
@@ -19,6 +19,7 @@ export class Gitbox {
   constructor(
     private readonly impersonator: Impersonator,
     private readonly detector: Detector,
+    private readonly settings: Settings,
   ) {
     this.statusStrategy = new StatusStrategy(detector);
   }
@@ -33,11 +34,11 @@ export class Gitbox {
       await this.getOrCreate(ctx);
     }
 
-    await Renderer.setStatus(ctx, status);
+    await Renderer.setStatus(ctx, status, this.settings);
   }
 
   async shutdown(ctx: ExtensionContext) {
-    const { config } = await settings.getConfig();
+    const { config } = await this.settings.getConfig();
     const { deleteOnExit } = config;
 
     if (deleteOnExit) await this.removeGitbox(ctx);
@@ -69,7 +70,7 @@ export class Gitbox {
    * @returns The validated configuration
    */
   private async verifySettings(ctx: ExtensionContext): Promise<GitboxConfig> {
-    const { config, errors } = await settings.getConfig();
+    const { config, errors } = await this.settings.getConfig();
     if (errors.length > 0) {
       const message = ["[pi-gitbox]", ...errors].join("\n");
       ctx.ui.notify(message, "warning");
@@ -85,7 +86,7 @@ export class Gitbox {
    * @returns The path for the gitbox
    */
   private async getOrCreate(ctx: ExtensionContext): Promise<string> {
-    const { config } = await settings.getConfig();
+    const { config } = await this.settings.getConfig();
     const { baseDir } = config;
     const cwd = basename(ctx.cwd);
 
@@ -129,7 +130,7 @@ export class Gitbox {
    * - "UNAVAILABLE" if `git` command is not found
    */
   private async getStatus(ctx: ExtensionContext): Promise<Status> {
-    const { config } = await settings.getConfig();
+    const { config } = await this.settings.getConfig();
     return this.statusStrategy.resolve(config, ctx.cwd);
   }
 }

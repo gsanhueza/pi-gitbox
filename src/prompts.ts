@@ -1,10 +1,10 @@
 import { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { dirname } from "node:path";
 import { sendNotification } from "./utils/notifications";
-import { settings } from "./settings";
 import { Detector } from "./core/detector";
 import { normalizePath, resolvePaths } from "./utils/compat";
 import { BypassPathsSettingsItem } from "./settings/items/bypass-paths";
+import type { Settings } from "./settings";
 
 /**
  * Prompt options
@@ -25,6 +25,7 @@ enum Options {
  * @returns An object with `block: true` and a `reason` if blocked, or `{ block: false }` if allowed
  */
 export const askUserOrBlock = async (
+  settings: Settings,
   ctx: ExtensionContext,
   path: string,
 ): Promise<{ block: boolean; reason?: string }> => {
@@ -41,7 +42,6 @@ export const askUserOrBlock = async (
   const message = `Allow "${path}" to be accessed?`;
   const prompt = `[pi-gitbox]: ${message}`;
 
-  // Send system notification before showing the UI prompt
   const { config } = await settings.getConfig();
   sendNotification(message, config.systemNotifications);
 
@@ -104,6 +104,7 @@ const findDeepestExistingParent = async (
  * @returns The blocked response if any path was denied, or null
  */
 export const checkPathsAccess = async (
+  settings: Settings,
   detector: Detector,
   paths: string[],
   resolvedDirs: string[],
@@ -121,7 +122,7 @@ export const checkPathsAccess = async (
   }
 
   for (const path of pending) {
-    const response = await askUserOrBlock(ctx, path);
+    const response = await askUserOrBlock(settings, ctx, path);
     if (response.block) return response;
   }
   return null;

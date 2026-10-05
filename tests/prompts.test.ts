@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Detector } from "../src/core/detector";
 import { checkPathsAccess } from "../src/prompts";
+import { Settings } from "../src/settings";
 
 // Mock askUserOrBlock
 vi.mock("../src/prompts", async (importOriginal) => {
@@ -16,6 +17,12 @@ vi.mock("../src/prompts", async (importOriginal) => {
 describe("checkPathsAccess", () => {
   const mockCtx = { cwd: "/project" } as any;
   const resolvedDirs = ["/project"];
+  const mockSettings = {
+    getConfig: vi.fn().mockResolvedValue({
+      config: { systemNotifications: "on" },
+      errors: [],
+    }),
+  } as unknown as Settings;
   let detector: Detector;
 
   beforeEach(() => {
@@ -28,6 +35,7 @@ describe("checkPathsAccess", () => {
     const pathExistsSpy = vi.spyOn(detector, "pathExists");
 
     const result = await checkPathsAccess(
+      mockSettings,
       detector,
       ["/project/file"],
       resolvedDirs,
@@ -42,6 +50,7 @@ describe("checkPathsAccess", () => {
     vi.spyOn(detector, "pathExists").mockResolvedValue(false);
 
     const result = await checkPathsAccess(
+      mockSettings,
       detector,
       ["/nonexistent/path"],
       resolvedDirs,
@@ -57,6 +66,7 @@ describe("checkPathsAccess", () => {
     );
 
     const result = await checkPathsAccess(
+      mockSettings,
       detector,
       ["/nonexistent/path"],
       resolvedDirs,
@@ -71,6 +81,7 @@ describe("checkPathsAccess", () => {
     vi.spyOn(detector, "pathExists").mockResolvedValue(true);
 
     const result = await checkPathsAccess(
+      mockSettings,
       detector,
       ["/etc/shadow"],
       resolvedDirs,
@@ -84,7 +95,13 @@ describe("checkPathsAccess", () => {
     vi.spyOn(detector, "isPathAllowed").mockReturnValue(false);
     vi.spyOn(detector, "pathExists").mockResolvedValue(false);
 
-    await checkPathsAccess(detector, ["/a", "/a", "/b"], resolvedDirs, mockCtx);
+    await checkPathsAccess(
+      mockSettings,
+      detector,
+      ["/a", "/a", "/b"],
+      resolvedDirs,
+      mockCtx,
+    );
     // pathExists called once per unique path
     expect(detector.pathExists).toHaveBeenCalledTimes(2);
   });

@@ -1,7 +1,7 @@
 import { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Status } from "./config/types";
 import { STATUS_KEY } from "./config/defaults";
-import { settings } from "./settings";
+import type { Settings } from "./settings";
 
 export class Renderer {
   private static lastStatus: string = "";
@@ -11,7 +11,11 @@ export class Renderer {
    * @param ctx The extension context.
    * @param status The status to set
    */
-  static async setStatus(ctx: ExtensionContext, status: Status): Promise<void> {
+  static async setStatus(
+    ctx: ExtensionContext,
+    status: Status,
+    settings: Settings,
+  ): Promise<void> {
     // Color the status with HEX codes
     const colorMapper: Record<Status, string> = {
       [Status.ENABLED]: "#00ff88",
@@ -25,7 +29,7 @@ export class Renderer {
     const coloredStatus = Renderer.colorHex(status, colorMapper[status]);
 
     Renderer.lastStatus = `${theme.fg("dim", "📦 Gitbox:")} ${coloredStatus}`;
-    await this.update(ctx);
+    await this.update(ctx, settings);
   }
 
   /**
@@ -33,7 +37,10 @@ export class Renderer {
    *
    * @param ctx The extension context
    */
-  static async update(ctx: ExtensionContext): Promise<void> {
+  static async update(
+    ctx: ExtensionContext,
+    settings: Settings,
+  ): Promise<void> {
     const { config } = await settings.getConfig();
     const { statusBar, bypassPaths } = config;
 

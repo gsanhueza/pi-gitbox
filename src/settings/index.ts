@@ -1,6 +1,4 @@
-import { getAgentDir } from "@earendil-works/pi-coding-agent";
 import { readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
 import type { GitboxConfig } from "../config/types";
 import { STATUS_KEY } from "../config/defaults";
 import { SettingsItem } from "./base";
@@ -17,12 +15,8 @@ export class Settings {
   /**
    * Manages Gitbox configuration: defaults, user settings, validation,
    * caching, and persistence to ~/.pi/agent/settings.json.
-   *
-   * @internal Use the exported `settings` singleton instead.
    */
-  constructor(
-    private readonly path: string = join(getAgentDir(), "settings.json"),
-  ) {}
+  constructor(private readonly path: string) {}
 
   /**
    * Retrieves the default configuration object.
@@ -154,8 +148,3 @@ export class Settings {
     return SETTINGS_ITEMS[id];
   }
 }
-
-/**
- * Shared singleton instance used across the extension.
- */
-export const settings = new Settings();

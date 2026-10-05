@@ -12,7 +12,7 @@ import {
 import { GitboxConfig } from "./config/types";
 import { Gitbox } from "./gitbox";
 import { Impersonator } from "./core/impersonator";
-import { settings } from "./settings";
+import { Settings } from "./settings";
 import { AllowedPathsSettingsItem } from "./settings/items/allowed-paths";
 import { SETTINGS_ITEMS } from "./settings/defaults";
 import { AllowedPathsEditor } from "./ui/allowed-paths-editor";
@@ -46,6 +46,7 @@ export class CommandManager {
   constructor(
     private readonly gitbox: Gitbox,
     private readonly impersonator: Impersonator,
+    private readonly settings: Settings,
   ) {}
 
   /**
@@ -80,10 +81,10 @@ export class CommandManager {
     // The settings file may have been edited outside this session (manually
     // or by another pi instance): drop the cache so the menu reflects what
     // is on disk
-    settings.resetConfigCache();
+    this.settings.resetConfigCache();
 
     this.commandCtx = ctx;
-    const { config } = await settings.getConfig();
+    const { config } = await this.settings.getConfig();
     const items = this.buildSettingsItems(config);
 
     await ctx.ui.custom<void>((tui, theme, _kb, done) => {
@@ -135,17 +136,17 @@ export class CommandManager {
     id: string,
     newValue: string,
   ): Promise<void> {
-    const { config } = await settings.getConfig();
+    const { config } = await this.settings.getConfig();
     const item = SETTINGS_ITEMS[id];
 
     if (!item) {
       // Fallback for legacy enum values
       const key: string = Object.values(Options).find((o) => o === id)!;
-      await settings.setConfig({ [key]: newValue === "on" });
+      await this.settings.setConfig({ [key]: newValue === "on" });
     } else {
       const result = item.setConfig(config, newValue);
       if (result.valid && result.config) {
-        await settings.setConfig(result.config);
+        await this.settings.setConfig(result.config);
       }
     }
 
@@ -200,7 +201,7 @@ export class CommandManager {
    * @param id The setting identifier to reset
    */
   private async resetSetting(id: string): Promise<void> {
-    await settings.resetKeys([id]);
+    await this.settings.resetKeys([id]);
 
     // Re-initialize to pick up the reset config
     if (this.commandCtx) {
@@ -217,7 +218,7 @@ export class CommandManager {
    */
   private async refreshSettingValue(id: string): Promise<void> {
     if (!this.settingsList) return;
-    const { config } = await settings.getConfig();
+    const { config } = await this.settings.getConfig();
     const item = SETTINGS_ITEMS[id];
     if (item) {
       this.settingsList.updateValue(id, item.format(config) ?? "");
@@ -232,7 +233,7 @@ export class CommandManager {
    * @param next The new paths array
    */
   private async persistAllowedPaths(next: string[]): Promise<void> {
-    await settings.setConfig({ allowedPaths: next });
+    await this.settings.setConfig({ allowedPaths: next });
 
     // Re-initialize to pick up the new configuration
     if (this.commandCtx) {
@@ -258,7 +259,8 @@ export class CommandManager {
       theme: this.theme,
       // Loaded fresh at editor open and after every change, so re-entering
       // the editor always reflects the persisted configuration
-      loadPaths: async () => (await settings.getConfig()).config.allowedPaths,
+      loadPaths: async () =>
+        (await this.settings.getConfig()).config.allowedPaths,
       onChanged: (next) => this.persistAllowedPaths(next),
       done,
     });
