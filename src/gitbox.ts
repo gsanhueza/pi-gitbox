@@ -27,7 +27,7 @@ export class Gitbox {
     await this.verifySettings(ctx);
 
     // Only create the gitbox folder if it makes sense
-    const status = await this.getStatus();
+    const status = await this.getStatus(ctx);
     if (status === Status.AVAILABLE || status === Status.ENABLED) {
       await this.impersonator.initialize(ctx);
       await this.getOrCreate(ctx);
@@ -120,6 +120,7 @@ export class Gitbox {
   /**
    * Determines the current status of the gitbox based on its existence.
    *
+   * @param ctx The extension context.
    * @returns Status
    * - "BYPASSED" if bypassGitbox is enabled
    * - "ENABLED" if the gitbox was created and gitignored paths exist
@@ -127,8 +128,8 @@ export class Gitbox {
    * - "NOT_REQUIRED" if the current working directory is not a git repository
    * - "UNAVAILABLE" if `git` command is not found
    */
-  private async getStatus(): Promise<Status> {
+  private async getStatus(ctx: ExtensionContext): Promise<Status> {
     const { config } = await settings.getConfig();
-    return this.statusStrategy.resolve(config);
+    return this.statusStrategy.resolve(config, ctx.cwd);
   }
 }

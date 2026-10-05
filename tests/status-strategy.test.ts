@@ -14,20 +14,20 @@ describe("StatusStrategy", () => {
 
   it("returns BYPASSED when bypassGitbox is enabled", () => {
     const config = { bypassGitbox: true } as any;
-    expect(strategy.resolve(config)).toBe(Status.BYPASSED);
+    expect(strategy.resolve(config, "/project")).toBe(Status.BYPASSED);
   });
 
   it("returns UNAVAILABLE when git is not available", () => {
     vi.spyOn(detector, "isGitAvailable").mockReturnValue(false);
     const config = { bypassGitbox: false } as any;
-    expect(strategy.resolve(config)).toBe(Status.UNAVAILABLE);
+    expect(strategy.resolve(config, "/project")).toBe(Status.UNAVAILABLE);
   });
 
   it("returns NOT_REQUIRED when not a git project", () => {
     vi.spyOn(detector, "isGitAvailable").mockReturnValue(true);
     vi.spyOn(detector, "isGitProject").mockReturnValue(false);
     const config = { bypassGitbox: false } as any;
-    expect(strategy.resolve(config)).toBe(Status.NOT_REQUIRED);
+    expect(strategy.resolve(config, "/project")).toBe(Status.NOT_REQUIRED);
   });
 
   it("returns AVAILABLE when no gitignored paths exist", () => {
@@ -35,7 +35,7 @@ describe("StatusStrategy", () => {
     vi.spyOn(detector, "isGitProject").mockReturnValue(true);
     vi.spyOn(detector, "getGitignoredPaths").mockReturnValue([]);
     const config = { bypassGitbox: false } as any;
-    expect(strategy.resolve(config)).toBe(Status.AVAILABLE);
+    expect(strategy.resolve(config, "/project")).toBe(Status.AVAILABLE);
   });
 
   it("returns ENABLED when gitignored paths exist", () => {
@@ -46,7 +46,7 @@ describe("StatusStrategy", () => {
       "dist",
     ]);
     const config = { bypassGitbox: false } as any;
-    expect(strategy.resolve(config)).toBe(Status.ENABLED);
+    expect(strategy.resolve(config, "/project")).toBe(Status.ENABLED);
   });
 
   it("evaluates conditions in priority order", () => {
@@ -56,6 +56,6 @@ describe("StatusStrategy", () => {
     vi.spyOn(detector, "isGitProject").mockReturnValue(true);
     vi.spyOn(detector, "getGitignoredPaths").mockReturnValue([]);
     const config = { bypassGitbox: true } as any;
-    expect(strategy.resolve(config)).toBe(Status.BYPASSED);
+    expect(strategy.resolve(config, "/project")).toBe(Status.BYPASSED);
   });
 });

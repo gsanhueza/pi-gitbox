@@ -14,10 +14,11 @@ describe("Detector.execSync methods", () => {
   it("isGitAvailable returns true when execSync succeeds", () => {
     const mockExec = vi.fn().mockReturnValue("git version 2.40.0");
     const detector = new Detector(mockExec);
-    expect(detector.isGitAvailable()).toBe(true);
+    expect(detector.isGitAvailable("/project")).toBe(true);
     expect(mockExec).toHaveBeenCalledWith("git -v", {
       encoding: "utf-8",
       stdio: ["pipe", "pipe", "ignore"],
+      cwd: "/project",
     });
   });
 
@@ -26,16 +27,16 @@ describe("Detector.execSync methods", () => {
       throw new Error("command not found");
     });
     const detector = new Detector(mockExec);
-    expect(detector.isGitAvailable()).toBe(false);
+    expect(detector.isGitAvailable("/project")).toBe(false);
   });
 
   it("isGitProject returns true when execSync succeeds", () => {
     const mockExec = vi.fn().mockReturnValue("true");
     const detector = new Detector(mockExec);
-    expect(detector.isGitProject()).toBe(true);
+    expect(detector.isGitProject("/project")).toBe(true);
     expect(mockExec).toHaveBeenCalledWith(
       "git rev-parse --is-inside-work-tree",
-      { encoding: "utf-8", stdio: ["pipe", "pipe", "ignore"] },
+      { encoding: "utf-8", stdio: ["pipe", "pipe", "ignore"], cwd: "/project" },
     );
   });
 
@@ -44,13 +45,16 @@ describe("Detector.execSync methods", () => {
       throw new Error("not a git repo");
     });
     const detector = new Detector(mockExec);
-    expect(detector.isGitProject()).toBe(false);
+    expect(detector.isGitProject("/project")).toBe(false);
   });
 
   it("getGitignoredPaths returns parsed lines on success", () => {
     const mockExec = vi.fn().mockReturnValue("node_modules\nbuild\n");
     const detector = new Detector(mockExec);
-    expect(detector.getGitignoredPaths()).toEqual(["node_modules", "build"]);
+    expect(detector.getGitignoredPaths("/project")).toEqual([
+      "node_modules",
+      "build",
+    ]);
   });
 
   it("getGitignoredPaths returns empty array when execSync throws", () => {
@@ -58,16 +62,17 @@ describe("Detector.execSync methods", () => {
       throw new Error("not a git repo");
     });
     const detector = new Detector(mockExec);
-    expect(detector.getGitignoredPaths()).toEqual([]);
+    expect(detector.getGitignoredPaths("/project")).toEqual([]);
   });
 
   it("dynamicCheck returns true when execSync succeeds", () => {
     const mockExec = vi.fn();
     const detector = new Detector(mockExec);
-    expect(detector.dynamicCheck("src/file.ts")).toBe(true);
+    expect(detector.dynamicCheck("src/file.ts", "/project")).toBe(true);
     expect(mockExec).toHaveBeenCalledWith("git check-ignore src/file.ts", {
       encoding: "utf-8",
       stdio: ["pipe", "pipe", "ignore"],
+      cwd: "/project",
     });
   });
 
@@ -76,7 +81,7 @@ describe("Detector.execSync methods", () => {
       throw new Error("not ignored");
     });
     const detector = new Detector(mockExec);
-    expect(detector.dynamicCheck("src/file.ts")).toBe(false);
+    expect(detector.dynamicCheck("src/file.ts", "/project")).toBe(false);
   });
 });
 

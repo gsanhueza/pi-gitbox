@@ -39,20 +39,22 @@ export class Detector {
    * Executes a git command and returns its stdout. Throws on failure.
    *
    * @param command The git command to execute
+   * @param cwd Working directory for the git command
    * @returns Command stdout as a string
    */
-  private runGitCommand(command: string): string {
-    return String(this.execFn(command, this.gitOptions));
+  private runGitCommand(command: string, cwd: string): string {
+    return String(this.execFn(command, { ...this.gitOptions, cwd }));
   }
 
   /**
    * Determines if the user has `git` as a usable command.
    *
+   * @param cwd The directory to run git commands in
    * @returns True if git exists
    */
-  isGitAvailable(): boolean {
+  isGitAvailable(cwd: string): boolean {
     try {
-      this.runGitCommand("git -v");
+      this.runGitCommand("git -v", cwd);
       return true;
     } catch {
       return false;
@@ -60,13 +62,14 @@ export class Detector {
   }
 
   /**
-   * Determines if the current working directory is a git repository.
+   * Determines if the given directory is a git repository.
    *
+   * @param cwd The directory to check
    * @returns True if it's a git repo
    */
-  isGitProject(): boolean {
+  isGitProject(cwd: string): boolean {
     try {
-      this.runGitCommand("git rev-parse --is-inside-work-tree");
+      this.runGitCommand("git rev-parse --is-inside-work-tree", cwd);
       return true;
     } catch {
       return false;
@@ -76,20 +79,22 @@ export class Detector {
   /**
    * Returns all gitignored files.
    *
+   * @param cwd The directory to run git commands in
    * @returns Relative paths for files
    */
-  getGitignoredFiles(): string[] {
-    const paths = this.getGitignoredPaths();
+  getGitignoredFiles(cwd: string): string[] {
+    const paths = this.getGitignoredPaths(cwd);
     return paths.filter((path) => !this.isDirectory(path));
   }
 
   /**
    * Returns all gitignored directories.
    *
+   * @param cwd The directory to run git commands in
    * @returns Relative paths for directories
    */
-  getGitignoredDirectories(): string[] {
-    const paths = this.getGitignoredPaths();
+  getGitignoredDirectories(cwd: string): string[] {
+    const paths = this.getGitignoredPaths(cwd);
     return paths.filter(this.isDirectory);
   }
 
@@ -97,12 +102,14 @@ export class Detector {
    * Runs the git command to get all git-ignored paths (both files and directories).
    * Returns an array of paths that are ignored by git.
    *
+   * @param cwd The directory to run git commands in
    * @returns Array of git-ignored paths (relative to repo root)
    */
-  getGitignoredPaths(): string[] {
+  getGitignoredPaths(cwd: string): string[] {
     try {
       const output = this.runGitCommand(
         "git ls-files --directory --no-empty-directory --others --ignored --exclude-standard",
+        cwd,
       );
       const lines = output
         .trim()
@@ -178,11 +185,12 @@ export class Detector {
    * .vscode/tasks.json should be gitignored
    *
    * @param path The path to check
+   * @param cwd The directory to run git commands in
    * @returns True if it should be gitignored
    */
-  dynamicCheck(path: string): boolean {
+  dynamicCheck(path: string, cwd: string): boolean {
     try {
-      this.runGitCommand(`git check-ignore ${path}`);
+      this.runGitCommand(`git check-ignore ${path}`, cwd);
       return true;
     } catch {
       return false;

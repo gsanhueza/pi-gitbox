@@ -45,7 +45,9 @@ export class Impersonator {
    * @param ctx The extension context
    */
   private async initializeDirectories(baseDir: string, ctx: ExtensionContext) {
-    const gitignoredDirectories = this.detector.getGitignoredDirectories();
+    const gitignoredDirectories = this.detector.getGitignoredDirectories(
+      ctx.cwd,
+    );
     const projectDir = joinPaths(baseDir, basename(ctx.cwd));
 
     for (const path of gitignoredDirectories) {
@@ -65,7 +67,7 @@ export class Impersonator {
    * @param ctx The extension context
    */
   private async initializeFiles(baseDir: string, ctx: ExtensionContext) {
-    const gitignoredFiles = this.detector.getGitignoredFiles();
+    const gitignoredFiles = this.detector.getGitignoredFiles(ctx.cwd);
     const projectDir = joinPaths(baseDir, basename(ctx.cwd));
 
     for (const path of gitignoredFiles) {
@@ -225,7 +227,7 @@ export class Impersonator {
 
     // Not yet in the mapper => Dynamic checking
     // We'll need to create the path on-the-fly
-    if (this.detector.dynamicCheck(absPath)) {
+    if (this.detector.dynamicCheck(absPath, ctx.cwd)) {
       const relPath = relative(ctx.cwd, path);
       const projectDir = joinPaths(config.baseDir, basename(ctx.cwd));
 

@@ -29,21 +29,22 @@ export class StatusStrategy {
    * Resolves the current status for the given configuration.
    *
    * @param config The current GitboxConfig.
+   * @param cwd The directory to run git commands in.
    * @returns The resolved Status.
    */
-  resolve(config: GitboxConfig): Status {
+  resolve(config: GitboxConfig, cwd: string): Status {
     const conditions: StatusCondition[] = [
       { check: (c) => c.bypassGitbox, status: Status.BYPASSED },
       {
-        check: () => !this.detector.isGitAvailable(),
+        check: () => !this.detector.isGitAvailable(cwd),
         status: Status.UNAVAILABLE,
       },
       {
-        check: () => !this.detector.isGitProject(),
+        check: () => !this.detector.isGitProject(cwd),
         status: Status.NOT_REQUIRED,
       },
       {
-        check: () => this.detector.getGitignoredPaths().length === 0,
+        check: () => this.detector.getGitignoredPaths(cwd).length === 0,
         status: Status.AVAILABLE,
       },
     ];
