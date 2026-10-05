@@ -23,10 +23,12 @@ function makeEditor(
   // Simulates the persisted configuration: the loader always reads the
   // current value, and onChanged (persistence) updates it.
   let stored = [...paths];
-  const loadPaths = vi.fn().mockImplementation(async () => [...stored]);
+  const loadPaths = vi
+    .fn()
+    .mockImplementation(() => Promise.resolve([...stored]));
   const persist =
     onChanged ??
-    (async (next: string[]) => {
+    ((next: string[]) => {
       stored = [...next];
     });
   const editor = new AllowedPathsEditor({
@@ -46,9 +48,8 @@ async function waitReady(
   editor: AllowedPathsEditor,
   text: string,
 ): Promise<string[]> {
-  await vi.waitFor(() =>
-    expect(strip(editor.render(80).join("\n"))).toContain(text),
-  );
+  await Promise.resolve(); // flush the async load from constructor
+  expect(strip(editor.render(80).join("\n"))).toContain(text);
   return editor.render(80).map(strip);
 }
 
@@ -102,7 +103,9 @@ describe("AllowedPathsEditor", () => {
     // Dialog is open: type the path and submit
     editor.handleInput("/b");
     editor.handleInput("\r");
-    await vi.waitFor(() => expect(loadPaths).toHaveBeenCalledTimes(2));
+    await Promise.resolve(); // flush applyChange → onChanged
+    await Promise.resolve(); // flush reload → loadPaths
+    expect(loadPaths).toHaveBeenCalledTimes(2);
     const lines = await waitReady(editor, "/b");
     expect(lines.some((l) => l.includes("/b"))).toBe(true);
   });
@@ -113,7 +116,9 @@ describe("AllowedPathsEditor", () => {
     editor.handleInput("d");
     // Confirmation dialog: Delete is the first option — confirm with Enter
     editor.handleInput("\r");
-    await vi.waitFor(() => expect(loadPaths).toHaveBeenCalledTimes(2));
+    await Promise.resolve(); // flush applyChange → onChanged
+    await Promise.resolve(); // flush reload → loadPaths
+    expect(loadPaths).toHaveBeenCalledTimes(2);
     const lines = await waitReady(editor, "/b");
     expect(lines.some((l) => l.includes("/a"))).toBe(false);
     expect(lines.some((l) => l.includes("/b"))).toBe(true);
@@ -126,9 +131,9 @@ describe("AllowedPathsEditor", () => {
     editor.handleInput("a");
     editor.handleInput("/b");
     editor.handleInput("\r");
-    await vi.waitFor(() =>
-      expect(editor.render(80).map(strip).join("\n")).toContain("/b"),
-    );
+    await Promise.resolve(); // flush applyChange → onChanged
+    await Promise.resolve(); // flush reload → loadPaths
+    expect(editor.render(80).map(strip).join("\n")).toContain("/b");
 
     // Re-entering the editor creates a new instance that loads the
     // persisted paths — it must include the recently added one
