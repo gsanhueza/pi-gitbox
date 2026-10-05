@@ -10,7 +10,7 @@ import { ResettableSettingsList } from "./resettable-settings-list";
 /**
  * Options for the {@link AllowedPathsEditor}.
  */
-export interface AllowedPathsEditorOptions {
+interface AllowedPathsEditorOptions {
   /** TUI instance, used to request re-renders after async persists. */
   tui: TUI;
   /** Theme for dialogs (from the ctx.ui.custom factory). */

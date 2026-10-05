@@ -24,7 +24,7 @@ enum Options {
  * @param path The path to check
  * @returns An object with `block: true` and a `reason` if blocked, or `{ block: false }` if allowed
  */
-export const askUserOrBlock = async (
+const askUserOrBlock = async (
   settings: Settings,
   ctx: ExtensionContext,
   path: string,

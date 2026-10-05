@@ -43,20 +43,6 @@ describe("Settings", () => {
     });
   });
 
-  describe("getItem", () => {
-    it("returns the SettingsItem for a known id", () => {
-      const settings = new Settings(join(tmpDir, "settings.json"));
-      const item = settings.getItem("statusBar");
-      expect(item).toBeDefined();
-      expect(item?.id).toBe("statusBar");
-    });
-
-    it("returns undefined for unknown id", () => {
-      const settings = new Settings(join(tmpDir, "settings.json"));
-      expect(settings.getItem("nonexistent")).toBeUndefined();
-    });
-  });
-
   describe("resetKeys", () => {
     it("deletes specified keys from persisted settings", async () => {
       const path = join(tmpDir, "settings.json");

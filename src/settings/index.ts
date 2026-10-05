@@ -1,7 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import type { GitboxConfig } from "../config/types";
 import { STATUS_KEY } from "../config/defaults";
-import { SettingsItem } from "./base";
 import { SETTINGS_ITEMS } from "./defaults";
 
 /**
@@ -136,15 +135,5 @@ export class Settings {
     settings[STATUS_KEY] = gitbox;
     await this.writeSettings(settings);
     this.resetConfigCache();
-  }
-
-  /**
-   * Returns the SettingsItem for a given setting id.
-   *
-   * @param id The setting identifier.
-   * @returns The SettingsItem, or undefined if not found.
-   */
-  getItem(id: string): SettingsItem | undefined {
-    return SETTINGS_ITEMS[id];
   }
 }

@@ -4,7 +4,7 @@ import { ScalarSettingsItem } from "./scalar";
 /**
  * Options for a boolean settings item.
  */
-export interface BooleanSettingsOptions {
+interface BooleanSettingsOptions {
   /** Setting identifier (e.g. "bypassGitbox") */
   id: keyof GitboxConfig & string;
   /** Display label */

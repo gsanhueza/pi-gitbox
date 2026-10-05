@@ -12,7 +12,7 @@ import {
  * When provided, the list intercepts the corresponding keys on the main
  * list (never while a submenu or modal is open) and invokes the hook.
  */
-export interface SettingsListActions {
+interface SettingsListActions {
   /**
    * Invoked when `a` is pressed on the main list.
    *
