@@ -8,6 +8,24 @@ vi.mock("node:fs/promises", () => ({
   writeFile: vi.fn(),
 }));
 
+vi.mock("node:path", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:path")>();
+  return {
+    ...actual,
+    basename: vi.fn((p: string) => p.split("/").filter(Boolean).pop() ?? ""),
+  };
+});
+
+vi.mock("../src/utils/compat", () => ({
+  joinPaths: (...paths: string[]) => paths.join("/"),
+  resolvePaths: (...paths: string[]) => {
+    const baseIndex = paths.findIndex((p) => p.startsWith("/"));
+    const base = baseIndex >= 0 ? paths[baseIndex] : "/";
+    const rest = paths.slice(baseIndex + 1).filter((p) => p);
+    return base + (rest.length > 0 ? "/" + rest.join("/") : "");
+  },
+}));
+
 describe("Impersonator", () => {
   let imp: Impersonator;
   let mockDetector: Detector;

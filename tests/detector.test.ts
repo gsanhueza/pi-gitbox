@@ -123,12 +123,15 @@ describe("Detector.pathExists", () => {
     expect(await detector.pathExists(notDir)).toBe(false);
   });
 
-  it("returns true for a dangling symlink (lstat)", async () => {
-    const linkPath = join(testDir, "dangling-link");
-    const target = join(testDir, "does-not-exist");
-    symlinkSync(target, linkPath);
-    expect(await detector.pathExists(linkPath)).toBe(true);
-  });
+  it.skipIf(process.platform === "win32")(
+    "returns true for a dangling symlink (lstat)",
+    async () => {
+      const linkPath = join(testDir, "dangling-link");
+      const target = join(testDir, "does-not-exist");
+      symlinkSync(target, linkPath);
+      expect(await detector.pathExists(linkPath)).toBe(true);
+    },
+  );
 
   it("resolves relative paths against an explicit cwd", async () => {
     const filePath = join(testDir, "relative.txt");
