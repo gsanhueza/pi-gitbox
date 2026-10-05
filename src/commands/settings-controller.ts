@@ -4,36 +4,22 @@ import type {
 } from "@earendil-works/pi-coding-agent";
 import { getSettingsListTheme } from "@earendil-works/pi-coding-agent";
 import type { Component, TUI } from "@earendil-works/pi-tui";
-import {
-  AutocompleteItem,
-  Container,
-  type SettingItem,
-} from "@earendil-works/pi-tui";
-import { GitboxConfig } from "./config/types";
-import { Gitbox } from "./gitbox";
-import { Impersonator } from "./core/impersonator/impersonator";
-import { Settings } from "./settings";
-import { AllowedPathsSettingsItem } from "./settings/items/allowed-paths";
-import { SETTINGS_ITEMS } from "./settings/defaults";
-import { AllowedPathsEditor } from "./ui/allowed-paths-editor";
-import { DialogFactory } from "./ui/dialog/factory";
-import { ResettableSettingsList } from "./ui/resettable-settings-list";
+import { Container, type SettingItem } from "@earendil-works/pi-tui";
+import type { GitboxConfig } from "../config/types";
+import type { Gitbox } from "../gitbox";
+import { AllowedPathsSettingsItem } from "../settings/items/allowed-paths";
+import { SETTINGS_ITEMS } from "../settings/defaults";
+import { AllowedPathsEditor } from "../ui/allowed-paths-editor";
+import { DialogFactory } from "../ui/dialog/factory";
+import { ResettableSettingsList } from "../ui/resettable-settings-list";
+import type { Settings } from "../settings";
 
 /**
- * Configuration options
+ * Opens the `/gitbox` settings menu and applies changes made through it:
+ * writes new values, resets overrides, and re-initializes the extension
+ * so the new configuration takes effect.
  */
-enum Options {
-  STATUS_BAR = "statusBar",
-  DELETE_ON_EXIT = "deleteOnExit",
-  IMPERSONATE_DIRS = "impersonateDirs",
-  BYPASS_GITBOX = "bypassGitbox",
-  BYPASS_PATHS = "bypassPaths",
-}
-
-/**
- * Handles commands for the pi-gitbox extension.
- */
-export class CommandManager {
+export class SettingsMenuController {
   /** Reference to the active settings list for re-rendering on reset. */
   private settingsList: ResettableSettingsList | null = null;
   /** Cached context for async callbacks. */
@@ -43,44 +29,27 @@ export class CommandManager {
   /** Theme instance (from the ctx.ui.custom factory) for dialogs. */
   private theme: Theme | null = null;
 
+  /**
+   * Creates the controller.
+   *
+   * @param gitbox Re-initialized after configuration changes.
+   * @param settings Settings store read/written by the menu.
+   */
   constructor(
     private readonly gitbox: Gitbox,
-    private readonly impersonator: Impersonator,
     private readonly settings: Settings,
   ) {}
 
   /**
-   * Sets up the argument completions for the `/gitbox` command
+   * Opens the settings menu.
    *
-   * @param prefix Prefix written by the user
-   * @returns Completions with that prefix
-   */
-  getArgumentCompletions(prefix: string): AutocompleteItem[] | null {
-    const available = [
-      {
-        value: "paths",
-        label: "paths",
-        description: "Show impersonated paths",
-      },
-    ];
-    const filtered = available.filter((a) => a.value.startsWith(prefix));
-    return filtered.length > 0 ? filtered : null;
-  }
-
-  /**
-   * Handles the `/gitbox` command — opens a SettingsList or shows impersonated paths
+   * The settings file may have been edited outside this session (manually
+   * or by another pi instance): the cache is dropped first so the menu
+   * reflects what is on disk.
    *
-   * @param args The subcommand argument (e.g. "paths")
-   * @param ctx The extension context
+   * @param ctx The extension context.
    */
-  async runGitbox(args: string, ctx: ExtensionCommandContext): Promise<void> {
-    if (args === "paths") {
-      return await this.runGitboxPaths(ctx);
-    }
-
-    // The settings file may have been edited outside this session (manually
-    // or by another pi instance): drop the cache so the menu reflects what
-    // is on disk
+  async run(ctx: ExtensionCommandContext): Promise<void> {
     this.settings.resetConfigCache();
 
     this.commandCtx = ctx;
@@ -104,29 +73,6 @@ export class CommandManager {
   }
 
   /**
-   * Handles the `/gitbox paths` subcommand — shows impersonated paths
-   *
-   * @param ctx The extension context
-   */
-  private async runGitboxPaths(ctx: ExtensionCommandContext): Promise<void> {
-    const fileMapper = this.impersonator.getFileMapper(ctx.cwd);
-    const dirMapper = this.impersonator.getDirMapper(ctx.cwd);
-
-    const lines = Object.entries({ ...fileMapper, ...dirMapper })
-      .map(([source, target]) => {
-        const icon = source in dirMapper ? "📁" : "📄";
-        return `  ${icon} ${source} -> ${target}`;
-      })
-      .join("\n");
-
-    const content = lines
-      ? `Impersonated paths:\n${lines}`
-      : "No impersonated paths available.";
-
-    ctx.ui.notify(content);
-  }
-
-  /**
    * Handles a settings value change — writes the new value and re-renders.
    *
    * @param id The setting identifier
@@ -138,24 +84,12 @@ export class CommandManager {
   ): Promise<void> {
     const { config } = await this.settings.getConfig();
     const item = SETTINGS_ITEMS[id];
-
-    if (!item) {
-      // Fallback for legacy enum values
-      const key: string = Object.values(Options).find((o) => o === id)!;
-      await this.settings.setConfig({ [key]: newValue === "on" });
-    } else {
-      const result = item.setConfig(config, newValue);
-      if (result.valid && result.config) {
-        await this.settings.setConfig(result.config);
-      }
+    const result = item.setConfig(config, newValue);
+    if (result.valid && result.config) {
+      await this.settings.setConfig(result.config);
     }
 
-    // Re-initialize to pick up the new configuration
-    if (this.commandCtx) {
-      await this.gitbox.initialize(this.commandCtx);
-    }
-
-    await this.refreshSettingValue(id);
+    await this.applyConfigChange(id);
   }
 
   /**
@@ -175,8 +109,6 @@ export class CommandManager {
   /**
    * Shows a confirmation dialog before resetting the allowedPaths list
    * to the empty-array default.
-   *
-   * @returns Nothing.
    */
   private confirmAllowedPathsReset(): void {
     if (!this.settingsList || !this.theme || !this.tui) return;
@@ -202,12 +134,19 @@ export class CommandManager {
    */
   private async resetSetting(id: string): Promise<void> {
     await this.settings.resetKeys([id]);
+    await this.applyConfigChange(id);
+  }
 
-    // Re-initialize to pick up the reset config
+  /**
+   * Re-initializes the extension to pick up the changed configuration
+   * and refreshes the settings row.
+   *
+   * @param id The setting identifier that changed
+   */
+  private async applyConfigChange(id: string): Promise<void> {
     if (this.commandCtx) {
       await this.gitbox.initialize(this.commandCtx);
     }
-
     await this.refreshSettingValue(id);
   }
 
@@ -234,13 +173,7 @@ export class CommandManager {
    */
   private async persistAllowedPaths(next: string[]): Promise<void> {
     await this.settings.setConfig({ allowedPaths: next });
-
-    // Re-initialize to pick up the new configuration
-    if (this.commandCtx) {
-      await this.gitbox.initialize(this.commandCtx);
-    }
-
-    await this.refreshSettingValue("allowedPaths");
+    await this.applyConfigChange("allowedPaths");
   }
 
   /**

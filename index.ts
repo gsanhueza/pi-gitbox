@@ -7,7 +7,9 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import { execSync } from "child_process";
 import { join } from "node:path";
-import { CommandManager } from "./src/commands";
+import { GitboxCommand } from "./src/commands/gitbox-command";
+import { PathsReport } from "./src/commands/paths-report";
+import { SettingsMenuController } from "./src/commands/settings-controller";
 import { BASE_ALLOWED_PATHS } from "./src/config/defaults";
 import { Detector } from "./src/core/detector";
 import { Gitbox } from "./src/gitbox";
@@ -20,14 +22,16 @@ export default async (pi: ExtensionAPI) => {
   const detector = new Detector(execSync);
   const impersonator = new Impersonator(detector, settings);
   const gitbox = new Gitbox(impersonator, detector, settings);
-  const commandManager = new CommandManager(gitbox, impersonator, settings);
+  const pathsReport = new PathsReport(impersonator);
+  const settingsMenu = new SettingsMenuController(gitbox, settings);
+  const commandManager = new GitboxCommand(pathsReport, settingsMenu);
 
   // Command registration
   pi.registerCommand("gitbox", {
     description: "Open settings menu to configure Gitbox options",
     getArgumentCompletions: commandManager.getArgumentCompletions,
     handler: async (args: string, ctx: ExtensionCommandContext) =>
-      await commandManager.runGitbox(args, ctx),
+      await commandManager.run(args, ctx),
   });
 
   // Events
