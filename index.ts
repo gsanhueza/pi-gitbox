@@ -10,11 +10,10 @@ import { join } from "node:path";
 import { GitboxCommand } from "./src/commands/gitbox-command";
 import { PathsReport } from "./src/commands/paths-report";
 import { SettingsMenuController } from "./src/commands/settings-controller";
-import { BASE_ALLOWED_PATHS } from "./src/config/defaults";
 import { Detector } from "./src/core/detector";
+import { ToolCallProcessor } from "./src/core/tool-call-processor";
 import { Gitbox } from "./src/gitbox";
 import { Impersonator } from "./src/core/impersonator/impersonator";
-import { checkPathsAccess } from "./src/prompts";
 import { Settings } from "./src/settings";
 
 export default async (pi: ExtensionAPI) => {
@@ -22,6 +21,11 @@ export default async (pi: ExtensionAPI) => {
   const detector = new Detector(execSync);
   const impersonator = new Impersonator(detector, settings);
   const gitbox = new Gitbox(impersonator, detector, settings);
+  const toolCallProcessor = new ToolCallProcessor(
+    settings,
+    detector,
+    impersonator,
+  );
   const pathsReport = new PathsReport(impersonator);
   const settingsMenu = new SettingsMenuController(gitbox, settings);
   const commandManager = new GitboxCommand(pathsReport, settingsMenu);
@@ -45,51 +49,6 @@ export default async (pi: ExtensionAPI) => {
 
   pi.on("tool_call", async (event: ToolCallEvent, ctx: ExtensionContext) => {
     const { config } = await settings.getConfig();
-    const resolvedDirs = [...BASE_ALLOWED_PATHS, ...config.allowedPaths];
-
-    if (gitbox.isBashEvent(event)) {
-      const { command } = event.input;
-
-      // First, scan if we can even access the paths
-      if (!config.bypassPaths) {
-        const paths = impersonator.extractFromCommand(command);
-        const blocked = await checkPathsAccess(
-          settings,
-          detector,
-          paths,
-          resolvedDirs,
-          ctx,
-        );
-        if (blocked) return blocked;
-      }
-
-      // Then, impersonate the command
-      if (!config.bypassGitbox)
-        event.input.command = await impersonator.resolveCommand(
-          command,
-          ctx.cwd,
-        );
-    } else if (gitbox.isPathEvent(event)) {
-      const { path } = event.input as { path: string };
-
-      // First, scan if we can even access the paths
-      if (!config.bypassPaths) {
-        const blocked = await checkPathsAccess(
-          settings,
-          detector,
-          [path],
-          resolvedDirs,
-          ctx,
-        );
-        if (blocked) return blocked;
-      }
-
-      // Then, impersonate the path
-      if (!config.bypassGitbox)
-        (event.input as { path: string }).path = await impersonator.resolvePath(
-          path,
-          ctx.cwd,
-        );
-    }
+    return toolCallProcessor.handle(event, ctx, config);
   });
 };

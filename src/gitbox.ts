@@ -1,9 +1,4 @@
-import {
-  BashToolCallEvent,
-  ExtensionContext,
-  isToolCallEventType,
-  ToolCallEvent,
-} from "@earendil-works/pi-coding-agent";
+import { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { mkdir, rm } from "node:fs/promises";
 import { basename, resolve } from "node:path";
 import { GitboxConfig, Status } from "./config/types";
@@ -42,25 +37,6 @@ export class Gitbox {
     const { deleteOnExit } = config;
 
     if (deleteOnExit) await this.removeGitbox(ctx);
-  }
-
-  /**
-   * Determines if the event is a "bash" tool call
-   * @param event The event
-   * @returns True if "bash" event
-   */
-  isBashEvent(event: ToolCallEvent): event is BashToolCallEvent {
-    return isToolCallEventType("bash", event);
-  }
-
-  /**
-   * Determines if the event is a tool call where "path" exists
-   * @param event The event
-   * @returns True if "path" exists
-   */
-  isPathEvent(event: ToolCallEvent): boolean {
-    const pathTools = ["read", "edit", "write", "find", "grep", "ls"];
-    return pathTools.some((tool) => isToolCallEventType(tool, event));
   }
 
   /**

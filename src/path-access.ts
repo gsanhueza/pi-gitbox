@@ -101,7 +101,7 @@ const findDeepestExistingParent = async (
  * @param paths Paths to check
  * @param resolvedDirs Allowed directories
  * @param ctx The extension context
- * @returns The blocked response if any path was denied, or null
+ * @returns An allow/deny response with `block: true` and a `reason` if denied, or `{ block: false }` if allowed
  */
 export const checkPathsAccess = async (
   settings: Settings,
@@ -109,7 +109,7 @@ export const checkPathsAccess = async (
   paths: string[],
   resolvedDirs: string[],
   ctx: ExtensionContext,
-): Promise<{ block: boolean; reason?: string } | null> => {
+): Promise<{ block: boolean; reason?: string }> => {
   const pending: string[] = [];
 
   for (const path of new Set(paths)) {
@@ -125,5 +125,5 @@ export const checkPathsAccess = async (
     const response = await askUserOrBlock(settings, ctx, path);
     if (response.block) return response;
   }
-  return null;
+  return { block: false };
 };

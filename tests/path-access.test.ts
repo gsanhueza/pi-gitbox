@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Detector } from "../src/core/detector";
-import { checkPathsAccess } from "../src/prompts";
+import { checkPathsAccess } from "../src/path-access";
 import { Settings } from "../src/settings";
 
 // Mock askUserOrBlock
-vi.mock("../src/prompts", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../src/prompts")>();
+vi.mock("../src/path-access", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../src/path-access")>();
   return {
     ...actual,
     askUserOrBlock: vi
@@ -41,7 +41,7 @@ describe("checkPathsAccess", () => {
       resolvedDirs,
       mockCtx,
     );
-    expect(result).toBeNull();
+    expect(result).toEqual({ block: false });
     expect(pathExistsSpy).not.toHaveBeenCalled();
   });
 
@@ -56,7 +56,7 @@ describe("checkPathsAccess", () => {
       resolvedDirs,
       mockCtx,
     );
-    expect(result).toBeNull();
+    expect(result).toEqual({ block: false });
   });
 
   it("existing parent prompts for the parent", async () => {
