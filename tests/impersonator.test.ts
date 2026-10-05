@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { mkdir, writeFile } from "node:fs/promises";
-import { Impersonator } from "../src/core/impersonator";
+import { Impersonator } from "../src/core/impersonator/impersonator";
 import { Detector } from "../src/core/detector";
 import { Settings } from "../src/settings";
 
@@ -12,7 +11,6 @@ vi.mock("node:fs/promises", () => ({
 describe("Impersonator", () => {
   let imp: Impersonator;
   let mockDetector: Detector;
-
   let mockSettings: Settings;
 
   beforeEach(() => {
@@ -29,9 +27,8 @@ describe("Impersonator", () => {
 
   describe("pathMapper", () => {
     it("combines file and directory mappers", () => {
-      // Access private fields via any to set up test state
-      (imp as any).fileMapper = { "/abs/src": "/gitbox/src" };
-      (imp as any).dirMapper = { "/abs/node_modules": "/gitbox/node_modules" };
+      (imp as any).mapper.setFile("/abs/src", "/gitbox/src");
+      (imp as any).mapper.setDir("/abs/node_modules", "/gitbox/node_modules");
       expect(imp.pathMapper).toEqual({
         "/abs/src": "/gitbox/src",
         "/abs/node_modules": "/gitbox/node_modules",
@@ -39,67 +36,16 @@ describe("Impersonator", () => {
     });
 
     it("returns empty object when both mappers are empty", () => {
-      (imp as any).fileMapper = {};
-      (imp as any).dirMapper = {};
       expect(imp.pathMapper).toEqual({});
-    });
-  });
-
-  describe("stripGlobPattern", () => {
-    it("strips trailing * from path", async () => {
-      const result = await imp.extractFromCommand("ls dist/*");
-      expect(result).toEqual(["ls", "dist"]);
-    });
-
-    it("returns no path for bare *", async () => {
-      const result = await imp.extractFromCommand("ls *");
-      expect(result).toEqual(["ls"]);
-    });
-
-    it("returns unchanged path without glob", async () => {
-      const result = await imp.extractFromCommand("ls file.txt");
-      expect(result).toEqual(["ls", "file.txt"]);
-    });
-
-    it("strips path before last / in nested glob", async () => {
-      const result = await imp.extractFromCommand("ls src/**/*");
-      expect(result).toEqual(["ls", "src"]);
-    });
-
-    it("returns no path for glob starting with *", async () => {
-      const result = await imp.extractFromCommand("ls *file");
-      expect(result).toEqual(["ls"]);
-    });
-
-    it("returns value unchanged when pattern has no *", () => {
-      expect((imp as any).stripGlobPattern("file.txt")).toBe("file.txt");
-    });
-  });
-
-  describe("buildMapper", () => {
-    it("converts absolute paths to relative", () => {
-      const mapper = {
-        "/home/user/project/src": "/gitbox/project/src",
-        "/home/user/project/lib": "/gitbox/project/lib",
-      };
-      const result = (imp as any).buildMapper(mapper, "/home/user/project");
-      expect(result).toEqual({
-        src: "/gitbox/project/src",
-        lib: "/gitbox/project/lib",
-      });
-    });
-
-    it("returns empty object for empty input", () => {
-      const result = (imp as any).buildMapper({}, "/base");
-      expect(result).toEqual({});
     });
   });
 
   describe("getFileMapper", () => {
     it("returns file mapper with relative sources", () => {
-      (imp as any).fileMapper = {
-        "/home/user/project/src": "/gitbox/project/src",
-      };
+      (imp as any).mapper.setFile(
+        "/home/user/project/src",
+        "/gitbox/project/src",
+      );
       const result = imp.getFileMapper("/home/user/project");
       expect(result).toEqual({ src: "/gitbox/project/src" });
     });
@@ -107,9 +53,10 @@ describe("Impersonator", () => {
 
   describe("getDirMapper", () => {
     it("returns directory mapper with relative sources", () => {
-      (imp as any).dirMapper = {
-        "/home/user/project/node_modules": "/gitbox/project/node_modules",
-      };
+      (imp as any).mapper.setDir(
+        "/home/user/project/node_modules",
+        "/gitbox/project/node_modules",
+      );
       const result = imp.getDirMapper("/home/user/project");
       expect(result).toEqual({
         node_modules: "/gitbox/project/node_modules",
@@ -117,108 +64,18 @@ describe("Impersonator", () => {
     });
   });
 
-  describe("createDirectory", () => {
-    it("creates and returns impersonated path when it doesn't exist", async () => {
-      vi.spyOn(mockDetector, "pathExists").mockResolvedValue(false);
-      const result = await (imp as any).createDirectory(
-        "node_modules",
-        "/gitbox/project",
-      );
-      expect(result).toBe("/gitbox/project/node_modules");
-      expect(mkdir).toHaveBeenCalledWith("/gitbox/project/node_modules", {
-        recursive: true,
-      });
-    });
-
-    it("returns relative path when mkdir throws", async () => {
-      vi.spyOn(mockDetector, "pathExists").mockResolvedValue(false);
-      vi.mocked(mkdir).mockRejectedValue(new Error("EACCES"));
-      const result = await (imp as any).createDirectory(
-        "node_modules",
-        "/gitbox/project",
-      );
-      expect(result).toBe("node_modules");
-    });
-
-    it("returns impersonated path when it already exists", async () => {
-      vi.spyOn(mockDetector, "pathExists").mockResolvedValue(true);
-      const result = await (imp as any).createDirectory(
-        "node_modules",
-        "/gitbox/project",
-      );
-      expect(result).toBe("/gitbox/project/node_modules");
-      expect(mkdir).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("createFile", () => {
-    beforeEach(() => {
-      vi.resetAllMocks();
-    });
-
-    it("creates and returns impersonated path for .json files", async () => {
-      vi.spyOn(mockDetector, "pathExists").mockResolvedValue(false);
-      const result = await (imp as any).createFile(
-        "launch.json",
-        "/gitbox/project",
-      );
-      expect(result).toBe("/gitbox/project/launch.json");
-      expect(writeFile).toHaveBeenCalledWith(
-        "/gitbox/project/launch.json",
-        "{}",
-      );
-    });
-
-    it("creates and returns impersonated path for non-json files", async () => {
-      vi.spyOn(mockDetector, "pathExists").mockResolvedValue(false);
-      const result = await (imp as any).createFile(
-        "file.txt",
-        "/gitbox/project",
-      );
-      expect(result).toBe("/gitbox/project/file.txt");
-      expect(writeFile).toHaveBeenCalledWith("/gitbox/project/file.txt", " ");
-    });
-
-    it("creates parent directories before writing", async () => {
-      vi.spyOn(mockDetector, "pathExists").mockResolvedValue(false);
-      await (imp as any).createFile("sub/dir/file.txt", "/gitbox/project");
-      expect(mkdir).toHaveBeenCalledWith("/gitbox/project/sub/dir", {
-        recursive: true,
-      });
-    });
-
-    it("returns relative path when writeFile throws", async () => {
-      vi.spyOn(mockDetector, "pathExists").mockResolvedValue(false);
-      vi.mocked(writeFile).mockRejectedValue(new Error("EACCES"));
-      const result = await (imp as any).createFile(
-        "file.txt",
-        "/gitbox/project",
-      );
-      expect(result).toBe("file.txt");
-    });
-
-    it("returns impersonated path when file already exists", async () => {
-      vi.spyOn(mockDetector, "pathExists").mockResolvedValue(true);
-      const result = await (imp as any).createFile(
-        "file.txt",
-        "/gitbox/project",
-      );
-      expect(result).toBe("/gitbox/project/file.txt");
-      expect(writeFile).not.toHaveBeenCalled();
-    });
-  });
-
   describe("resolvePath", () => {
     it("returns impersonated path from file mapper", async () => {
-      (imp as any).fileMapper = { "/project/src": "/gitbox/project/src" };
+      (imp as any).mapper.setFile("/project/src", "/gitbox/project/src");
       const result = await imp.resolvePath("src", "/project");
       expect(result).toBe("/gitbox/project/src");
     });
 
     it("returns impersonated path from dir mapper", async () => {
-      (imp as any).dirMapper = {
-        "/project/node_modules": "/gitbox/project/node_modules",
-      };
+      (imp as any).mapper.setDir(
+        "/project/node_modules",
+        "/gitbox/project/node_modules",
+      );
       const result = await imp.resolvePath("node_modules", "/project");
       expect(result).toBe("/gitbox/project/node_modules");
     });
@@ -308,7 +165,7 @@ describe("Impersonator", () => {
 
       await imp.initialize({ cwd: "/project" } as any);
 
-      expect((imp as any).fileMapper).toEqual({
+      expect(imp.pathMapper).toEqual({
         "/project/.gitignore": "/gitbox/project/.gitignore",
         "/project/README.md": "/gitbox/project/README.md",
       });
@@ -323,7 +180,7 @@ describe("Impersonator", () => {
 
       await imp.initialize({ cwd: "/project" } as any);
 
-      expect((imp as any).dirMapper).toEqual({
+      expect(imp.pathMapper).toEqual({
         "/project/node_modules": "/gitbox/project/node_modules",
       });
     });
@@ -340,103 +197,30 @@ describe("Impersonator", () => {
 
       await imp.initialize({ cwd: "/project" } as any);
 
-      expect((imp as any).dirMapper).toEqual({});
+      expect(imp.getDirMapper("/project")).toEqual({});
     });
 
     it("resets mappers before initializing", async () => {
-      (imp as any).fileMapper = { "/old": "/old-target" };
-      (imp as any).dirMapper = { "/old-dir": "/old-dir-target" };
+      (imp as any).mapper.setFile("/old", "/old-target");
+      (imp as any).mapper.setDir("/old-dir", "/old-dir-target");
       vi.spyOn(mockDetector, "getGitignoredFiles").mockReturnValue([]);
       vi.spyOn(mockDetector, "getGitignoredDirectories").mockReturnValue([]);
 
       await imp.initialize({ cwd: "/project" } as any);
 
-      expect((imp as any).fileMapper).toEqual({});
-      expect((imp as any).dirMapper).toEqual({});
+      expect(imp.pathMapper).toEqual({});
     });
   });
 
   describe("extractFromCommand", () => {
-    it("extracts paths from a simple command", async () => {
-      const result = await imp.extractFromCommand("cat file.txt");
+    it("delegates to the command path extractor", () => {
+      const result = imp.extractFromCommand("cat file.txt");
       expect(result).toEqual(["cat", "file.txt"]);
     });
 
-    it("extracts paths from glob patterns", async () => {
-      const result = await imp.extractFromCommand("file dist/*");
-      expect(result).toContain("file");
-      expect(result).toContain("dist");
-    });
-
-    it("handles bare glob by excluding it", async () => {
-      const result = await imp.extractFromCommand("ls *");
-      expect(result).toEqual(["ls"]);
-    });
-
-    it("extracts paths from multiple globs", async () => {
-      const result = await imp.extractFromCommand("src/*.ts test/*.test.ts");
-      expect(result).toContain("src");
-      expect(result).toContain("test");
-    });
-
-    it("does not extract shell operators", async () => {
-      const result = await imp.extractFromCommand("cat a.txt && cat b.txt");
-      expect(result).toContain("cat");
-      expect(result).toContain("a.txt");
-      expect(result).toContain("b.txt");
-      expect(result).not.toContain("&&");
-    });
-
-    it("extracts command flags as tokens", async () => {
-      const result = await imp.extractFromCommand("ls -la -R");
-      expect(result).toContain("-la");
-      expect(result).toContain("-R");
-    });
-
-    it("extracts URLs as tokens", async () => {
-      const result = await imp.extractFromCommand(
-        "curl https://example.com/file.txt",
-      );
-      expect(result).toContain("curl");
-      expect(result).toContain("https://example.com/file.txt");
-    });
-
-    it("extracts environment variable assignments as tokens", async () => {
-      const result = await imp.extractFromCommand(
-        "NODE_ENV=production node app.js",
-      );
-      expect(result).toContain("node");
-      expect(result).toContain("app.js");
-      expect(result).toContain("NODE_ENV=production");
-    });
-
-    it("handles mixed paths and globs", async () => {
-      const result = await imp.extractFromCommand(
-        "cp src/main.ts dist/main.ts",
-      );
-      expect(result).toContain("cp");
-      expect(result).toContain("src/main.ts");
-      expect(result).toContain("dist/main.ts");
-    });
-
-    it("handles nested glob paths", async () => {
-      const result = await imp.extractFromCommand("build src/**/*");
-      expect(result).toContain("build");
-      expect(result).toContain("src");
-    });
-
-    it("handles empty command", async () => {
-      const result = await imp.extractFromCommand("");
+    it("handles empty command", () => {
+      const result = imp.extractFromCommand("");
       expect(result).toEqual([]);
-    });
-
-    it("extracts shell reserved words as tokens", async () => {
-      const result = await imp.extractFromCommand("if true then else fi");
-      expect(result).toContain("if");
-      expect(result).toContain("true");
-      expect(result).toContain("then");
-      expect(result).toContain("else");
-      expect(result).toContain("fi");
     });
   });
 });

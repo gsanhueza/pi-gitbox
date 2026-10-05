@@ -8,7 +8,7 @@ import { mkdir, rm } from "node:fs/promises";
 import { basename, resolve } from "node:path";
 import { GitboxConfig, Status } from "./config/types";
 import { Detector } from "./core/detector";
-import { Impersonator } from "./core/impersonator";
+import { Impersonator } from "./core/impersonator/impersonator";
 import { Renderer } from "./renderer";
 import { Settings } from "./settings";
 import { StatusStrategy } from "./core/status-strategy";

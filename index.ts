@@ -11,7 +11,7 @@ import { CommandManager } from "./src/commands";
 import { BASE_ALLOWED_PATHS } from "./src/config/defaults";
 import { Detector } from "./src/core/detector";
 import { Gitbox } from "./src/gitbox";
-import { Impersonator } from "./src/core/impersonator";
+import { Impersonator } from "./src/core/impersonator/impersonator";
 import { checkPathsAccess } from "./src/prompts";
 import { Settings } from "./src/settings";
 
@@ -48,7 +48,7 @@ export default async (pi: ExtensionAPI) => {
 
       // First, scan if we can even access the paths
       if (!config.bypassPaths) {
-        const paths = await impersonator.extractFromCommand(command);
+        const paths = impersonator.extractFromCommand(command);
         const blocked = await checkPathsAccess(
           settings,
           detector,

@@ -11,7 +11,7 @@ import {
 } from "@earendil-works/pi-tui";
 import { GitboxConfig } from "./config/types";
 import { Gitbox } from "./gitbox";
-import { Impersonator } from "./core/impersonator";
+import { Impersonator } from "./core/impersonator/impersonator";
 import { Settings } from "./settings";
 import { AllowedPathsSettingsItem } from "./settings/items/allowed-paths";
 import { SETTINGS_ITEMS } from "./settings/defaults";
