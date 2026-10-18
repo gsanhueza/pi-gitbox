@@ -28,7 +28,7 @@ const askUserOrBlock = async (
   settings: Settings,
   ctx: ExtensionContext,
   path: string,
-): Promise<{ block: boolean; reason?: string }> => {
+): Promise<{ block: boolean; reason?: string; sessionBypassed?: string }> => {
   // Check if UI is available
   if (!ctx.hasUI) {
     const reason = [
@@ -58,8 +58,9 @@ const askUserOrBlock = async (
 
   // Handle the bypass options.
   if (selected === Options.BYPASS_SESSION) {
-    config.allowedPaths = [...config.allowedPaths, path];
-  } else if (selected === Options.BYPASS_SAVE) {
+    return { block: false, sessionBypassed: path };
+  }
+  if (selected === Options.BYPASS_SAVE) {
     await settings.setConfig({ allowedPaths: [...config.allowedPaths, path] });
   }
 
@@ -101,7 +102,8 @@ const findDeepestExistingParent = async (
  * @param paths Paths to check
  * @param resolvedDirs Allowed directories
  * @param ctx The extension context
- * @returns An allow/deny response with `block: true` and a `reason` if denied, or `{ block: false }` if allowed
+ * @returns An allow/deny response with `block: true` and a `reason` if denied, or `{ block: false }` if allowed.
+ *   Includes `sessionBypassed` with paths the user session-bypassed.
  */
 export const checkPathsAccess = async (
   settings: Settings,
@@ -109,8 +111,10 @@ export const checkPathsAccess = async (
   paths: string[],
   resolvedDirs: string[],
   ctx: ExtensionContext,
-): Promise<{ block: boolean; reason?: string }> => {
+  sessionBypassed?: Set<string>,
+): Promise<{ block: boolean; reason?: string; sessionBypassed: string[] }> => {
   const pending: string[] = [];
+  const resultBypassed: string[] = [];
 
   for (const path of new Set(paths)) {
     if (detector.isPathAllowed(resolvedDirs, path, ctx.cwd)) continue;
@@ -121,9 +125,19 @@ export const checkPathsAccess = async (
     }
   }
 
-  for (const path of pending) {
+  // Deduplicate deepest parents (multiple input paths may share the same parent)
+  const uniquePending = [...new Set(pending)];
+
+  for (const path of uniquePending) {
+    // Skip if already session-bypassed
+    if (sessionBypassed?.has(path)) continue;
+
     const response = await askUserOrBlock(settings, ctx, path);
-    if (response.block) return response;
+    if (response.block) return { ...response, sessionBypassed: [] };
+    if (response.sessionBypassed) {
+      resultBypassed.push(response.sessionBypassed);
+      sessionBypassed?.add(response.sessionBypassed);
+    }
   }
-  return { block: false };
+  return { block: false, sessionBypassed: resultBypassed };
 };

@@ -10,7 +10,9 @@ vi.mock("../src/path-access", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../src/path-access")>();
   return {
     ...actual,
-    checkPathsAccess: vi.fn().mockResolvedValue({ block: false }),
+    checkPathsAccess: vi
+      .fn()
+      .mockResolvedValue({ block: false, sessionBypassed: [] }),
   };
 });
 
@@ -32,7 +34,10 @@ describe("ToolCallProcessor", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockCheckPathsAccess.mockResolvedValue({ block: false });
+    mockCheckPathsAccess.mockResolvedValue({
+      block: false,
+      sessionBypassed: [],
+    });
     detector = new Detector();
     impersonator = {
       extractFromCommand: vi.fn().mockReturnValue([]),
@@ -59,6 +64,7 @@ describe("ToolCallProcessor", () => {
       ["/a", "/b"],
       resolvedDirs,
       mockCtx,
+      expect.any(Set),
     );
     expect(impersonator.resolveCommand).toHaveBeenCalledWith(
       "cat file",
@@ -82,6 +88,7 @@ describe("ToolCallProcessor", () => {
       ["secrets.env"],
       resolvedDirs,
       mockCtx,
+      expect.any(Set),
     );
     expect(impersonator.resolvePath).toHaveBeenCalledWith(
       "secrets.env",
@@ -141,7 +148,11 @@ describe("ToolCallProcessor", () => {
   });
 
   it("returns the blocked response without impersonating", async () => {
-    const blocked = { block: true, reason: "denied" };
+    const blocked = {
+      block: true,
+      reason: "denied",
+      sessionBypassed: [],
+    };
     mockCheckPathsAccess.mockResolvedValue(blocked);
     const event = {
       type: "tool_call",
@@ -168,5 +179,24 @@ describe("ToolCallProcessor", () => {
     expect(mockCheckPathsAccess).not.toHaveBeenCalled();
     expect(impersonator.resolveCommand).not.toHaveBeenCalled();
     expect(impersonator.resolvePath).not.toHaveBeenCalled();
+  });
+
+  it("passes sessionBypassed set to checkPathsAccess", async () => {
+    const event = {
+      type: "tool_call",
+      toolName: "read",
+      input: { path: "/tmp/secret" },
+    } as any;
+
+    await processor.handle(event, mockCtx, baseConfig);
+
+    expect(mockCheckPathsAccess).toHaveBeenCalledWith(
+      mockSettings,
+      detector,
+      ["/tmp/secret"],
+      resolvedDirs,
+      mockCtx,
+      expect.any(Set),
+    );
   });
 });

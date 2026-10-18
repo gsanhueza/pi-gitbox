@@ -8,9 +8,11 @@ vi.mock("../src/path-access", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../src/path-access")>();
   return {
     ...actual,
-    askUserOrBlock: vi
-      .fn()
-      .mockResolvedValue({ block: true, reason: "blocked" }),
+    askUserOrBlock: vi.fn().mockResolvedValue({
+      block: true,
+      reason: "blocked",
+      sessionBypassed: [],
+    }),
   };
 });
 
@@ -41,7 +43,7 @@ describe("checkPathsAccess", () => {
       resolvedDirs,
       mockCtx,
     );
-    expect(result).toEqual({ block: false });
+    expect(result).toEqual({ block: false, sessionBypassed: [] });
     expect(pathExistsSpy).not.toHaveBeenCalled();
   });
 
@@ -56,7 +58,7 @@ describe("checkPathsAccess", () => {
       resolvedDirs,
       mockCtx,
     );
-    expect(result).toEqual({ block: false });
+    expect(result).toEqual({ block: false, sessionBypassed: [] });
   });
 
   it("existing parent prompts for the parent", async () => {
@@ -95,7 +97,7 @@ describe("checkPathsAccess", () => {
     vi.spyOn(detector, "isPathAllowed").mockReturnValue(false);
     vi.spyOn(detector, "pathExists").mockResolvedValue(false);
 
-    await checkPathsAccess(
+    const result = await checkPathsAccess(
       mockSettings,
       detector,
       ["/a", "/a", "/b"],
@@ -104,5 +106,45 @@ describe("checkPathsAccess", () => {
     );
     // pathExists called once per unique path
     expect(detector.pathExists).toHaveBeenCalledTimes(2);
+    expect(result).toEqual({ block: false, sessionBypassed: [] });
+  });
+
+  it("deduplicates deepest existing parents", async () => {
+    vi.spyOn(detector, "isPathAllowed").mockReturnValue(false);
+    vi.spyOn(detector, "pathExists").mockImplementation(async (path: string) =>
+      path === "/nonexistent" ? true : false,
+    );
+
+    // Three different paths all resolve to the same deepest parent
+    const result = await checkPathsAccess(
+      mockSettings,
+      detector,
+      ["/nonexistent/a", "/nonexistent/b", "/nonexistent/c"],
+      resolvedDirs,
+      mockCtx,
+    );
+    // askUserOrBlock called only once (deepest parent deduplicated)
+    expect(result).not.toBeNull();
+    expect(result!.block).toBe(true);
+  });
+
+  it("skips prompting when deepest parent is already session-bypassed", async () => {
+    vi.spyOn(detector, "isPathAllowed").mockReturnValue(false);
+    vi.spyOn(detector, "pathExists").mockImplementation(async (path: string) =>
+      path === "/nonexistent" ? true : false,
+    );
+
+    const sessionBypassed = new Set<string>(["/nonexistent"]);
+
+    const result = await checkPathsAccess(
+      mockSettings,
+      detector,
+      ["/nonexistent/a"],
+      resolvedDirs,
+      mockCtx,
+      sessionBypassed,
+    );
+    expect(result).toEqual({ block: false, sessionBypassed: [] });
+    // askUserOrBlock should not be called since the deepest parent is already bypassed
   });
 });

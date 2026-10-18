@@ -24,6 +24,9 @@ type BlockResponse = { block: boolean; reason?: string } | undefined;
  * an access check (unless bypassed) followed by impersonation (unless bypassed).
  */
 export class ToolCallProcessor {
+  /** Cached session-bypassed paths to avoid re-prompting. */
+  private sessionBypassed = new Set<string>();
+
   /**
    * @param settings Settings providing the Gitbox configuration
    * @param detector Detector used for path access checks
@@ -155,8 +158,9 @@ export class ToolCallProcessor {
       paths,
       resolvedDirs,
       ctx,
+      this.sessionBypassed,
     );
-    if (!result.block) return undefined;
-    return result;
+    if (result.block) return result;
+    return undefined;
   }
 }
