@@ -1,25 +1,17 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
-
-vi.mock("node:child_process", () => ({
-  execFile: vi.fn(),
-}));
-
-import { execFile } from "node:child_process";
+import { describe, expect, it, vi } from "vitest";
 import { sendNotification } from "../../src/utils/notifications";
 
 describe("sendNotification", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it("does not call execFile when priority is off", () => {
-    sendNotification("hello", "off");
-    expect(execFile).not.toHaveBeenCalled();
+    const mockExecFile = vi.fn();
+    sendNotification("hello", "off", mockExecFile);
+    expect(mockExecFile).not.toHaveBeenCalled();
   });
 
   it("calls execFile with correct args for priority on", () => {
-    sendNotification("hello world", "on");
-    expect(execFile).toHaveBeenCalledWith(
+    const mockExecFile = vi.fn();
+    sendNotification("hello world", "on", mockExecFile);
+    expect(mockExecFile).toHaveBeenCalledWith(
       "notify-send",
       ["-a", "pi-gitbox", "Access requested", "hello world"],
       expect.any(Function),
@@ -27,8 +19,9 @@ describe("sendNotification", () => {
   });
 
   it("calls execFile with correct args for persistent priority", () => {
-    sendNotification("urgent", "persistent");
-    expect(execFile).toHaveBeenCalledWith(
+    const mockExecFile = vi.fn();
+    sendNotification("urgent", "persistent", mockExecFile);
+    expect(mockExecFile).toHaveBeenCalledWith(
       "notify-send",
       ["-a", "pi-gitbox", "Access requested", "urgent", "-u", "critical"],
       expect.any(Function),
@@ -36,8 +29,9 @@ describe("sendNotification", () => {
   });
 
   it("defaults to on priority", () => {
-    sendNotification("default priority");
-    expect(execFile).toHaveBeenCalledWith(
+    const mockExecFile = vi.fn();
+    sendNotification("default priority", "on", mockExecFile);
+    expect(mockExecFile).toHaveBeenCalledWith(
       "notify-send",
       ["-a", "pi-gitbox", "Access requested", "default priority"],
       expect.any(Function),
@@ -45,9 +39,9 @@ describe("sendNotification", () => {
   });
 
   it("does not throw when execFile throws", () => {
-    vi.mocked(execFile).mockImplementation(() => {
+    const mockExecFile = vi.fn(() => {
       throw new Error("notify-send not found");
     });
-    expect(() => sendNotification("test", "on")).not.toThrow();
+    expect(() => sendNotification("test", "on", mockExecFile)).not.toThrow();
   });
 });

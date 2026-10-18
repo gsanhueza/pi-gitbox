@@ -1,5 +1,6 @@
 import { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { dirname } from "node:path";
+import { execFile } from "node:child_process";
 import { sendNotification } from "./utils/notifications";
 import { Detector } from "./core/detector";
 import { normalizePath, resolvePaths } from "./utils/compat";
@@ -43,7 +44,7 @@ const askUserOrBlock = async (
   const prompt = `[pi-gitbox]: ${message}`;
 
   const { config } = await settings.getConfig();
-  sendNotification(message, config.systemNotifications);
+  sendNotification(message, config.systemNotifications, execFile);
 
   const selected = await ctx.ui.select(prompt, Object.values(Options));
 

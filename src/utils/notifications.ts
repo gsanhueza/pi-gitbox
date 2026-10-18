@@ -1,4 +1,4 @@
-import { execFile } from "node:child_process";
+import type { execFile as ExecFileFn } from "node:child_process";
 
 /**
  * Notification priority levels for `notify-send`.
@@ -14,10 +14,12 @@ type NotificationPriority = "on" | "off" | "persistent";
  *
  * @param message The notification message body.
  * @param priority The notification priority level.
+ * @param execFile The execFile function to invoke.
  */
 export function sendNotification(
   message: string,
   priority: NotificationPriority = "on",
+  execFile: ExecFileFn,
 ): void {
   if (priority === "off") return;
 
