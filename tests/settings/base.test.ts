@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SettingsItem } from "../../src/settings/base";
 import type { GitboxConfig } from "../../src/config/types";
+import type { ValidationResult } from "../../src/settings/base";
 
 /**
  * Minimal concrete implementation of SettingsItem for testing.
@@ -14,10 +15,7 @@ class TestSettingsItem extends SettingsItem {
     return "test-value";
   }
 
-  setConfig(
-    _config: GitboxConfig,
-    _value: string,
-  ): import("../src/settings/base").ValidationResult {
+  setConfig(_config: GitboxConfig, _value: string): ValidationResult {
     return { valid: true };
   }
 

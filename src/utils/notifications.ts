@@ -1,4 +1,18 @@
-import type { execFile as ExecFileFn } from "node:child_process";
+import type { ExecFileException } from "node:child_process";
+
+/**
+ * Minimal call signature of node's `execFile` used to fire-and-forget
+ * notifications. Kept structural so test mocks remain assignable.
+ */
+type ExecFileFn = (
+  file: string,
+  args: readonly string[],
+  callback: (
+    error: ExecFileException | null,
+    stdout: string,
+    stderr: string,
+  ) => void,
+) => void;
 
 /**
  * Notification priority levels for `notify-send`.

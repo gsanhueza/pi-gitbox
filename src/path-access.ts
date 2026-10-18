@@ -1,5 +1,5 @@
 import { ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { dirname } from "node:path";
+import { dirname, parse } from "node:path";
 import { execFile } from "node:child_process";
 import { sendNotification } from "./utils/notifications";
 import { Detector } from "./core/detector";
@@ -83,8 +83,13 @@ const findDeepestExistingParent = async (
   detector: Detector,
 ): Promise<string | null> => {
   let current = resolvePaths(cwd, normalizePath(path));
+  // Canonical filesystem root of the resolved path: "/" on POSIX,
+  // "C:/" (drive letter) or "//server/share/" (UNC) on Windows.
+  // Deriving it from the path keeps the walk-up loop terminating on
+  // every platform instead of relying on a hardcoded "/" sentinel.
+  const root = normalizePath(parse(current).root);
 
-  while (current !== "/") {
+  while (current !== root) {
     if (await detector.pathExists(current, cwd)) {
       return current;
     }

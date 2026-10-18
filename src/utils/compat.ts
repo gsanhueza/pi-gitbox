@@ -1,5 +1,5 @@
 import { homedir } from "node:os";
-import { posix, resolve, sep } from "node:path";
+import { join, resolve, sep } from "node:path";
 
 /**
  * Standardized path separator
@@ -16,31 +16,31 @@ export const normalizePath = (path: string): string => {
   return path
     .split(sep)
     .join(PATH_SEP)
-    .replace(/^~\//g, homedir() + PATH_SEP);
+    .replace(/^~\//g, homedir().split(sep).join(PATH_SEP) + PATH_SEP);
 };
 
 /**
  * Joins paths in a Win32/POSIX compatible way
  *
+ * Uses the platform-aware `join` (correct drive-letter handling on
+ * Windows) and canonicalizes the result to forward slashes.
+ *
  * @param paths Paths to join/merge
  * @returns A merged path
  */
 export const joinPaths = (...paths: string[]): string => {
-  const merged = posix.join(...paths);
-  const response = normalizePath(merged);
-
-  return response;
+  return normalizePath(join(...paths));
 };
 
 /**
  * Resolves paths in a Win32/POSIX compatible way
  *
+ * Uses the platform-aware `resolve` (correct drive-letter handling on
+ * Windows) and canonicalizes the result to forward slashes.
+ *
  * @param paths Paths to resolve
  * @returns A resolved path
  */
 export const resolvePaths = (...paths: string[]): string => {
-  const resolved = resolve(...paths);
-  const response = normalizePath(resolved);
-
-  return response;
+  return normalizePath(resolve(...paths));
 };

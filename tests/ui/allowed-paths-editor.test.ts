@@ -28,7 +28,7 @@ function makeEditor(
     .mockImplementation(() => Promise.resolve([...stored]));
   const persist =
     onChanged ??
-    ((next: string[]) => {
+    (async (next: string[]) => {
       stored = [...next];
     });
   const editor = new AllowedPathsEditor({

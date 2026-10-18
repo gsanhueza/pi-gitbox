@@ -1,7 +1,9 @@
+import { parse } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Detector } from "../src/core/detector";
 import { checkPathsAccess } from "../src/path-access";
 import { Settings } from "../src/settings";
+import { joinPaths, normalizePath, resolvePaths } from "../src/utils/compat";
 
 vi.mock("../src/path-access", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../src/path-access")>();
@@ -16,8 +18,18 @@ vi.mock("../src/path-access", async (importOriginal) => {
 });
 
 describe("checkPathsAccess", () => {
-  const mockCtx = { cwd: "/project" } as any;
-  const resolvedDirs = ["/project"];
+  // Platform-correct absolute paths derived from path primitives, so the
+  // fixtures are equally valid on POSIX ("/nonexistent") and Windows
+  // ("C:/nonexistent"). resolvePaths anchors a rooted path to the current
+  // drive on Win32, mirroring what checkPathsAccess does internally.
+  const missingDir = resolvePaths("/nonexistent");
+  const childOf = (name: string) => joinPaths(missingDir, name);
+  // Direct children of the filesystem root ("/a" on POSIX, "C:/a" on Win32)
+  const fsRoot = resolvePaths(parse(missingDir).root);
+  const childOfRoot = (name: string) => joinPaths(fsRoot, name);
+
+  const mockCtx = { cwd: resolvePaths("/project") } as any;
+  const resolvedDirs = [mockCtx.cwd];
   const mockSettings = {
     getConfig: vi.fn().mockResolvedValue({
       config: { systemNotifications: "on" },
@@ -38,7 +50,7 @@ describe("checkPathsAccess", () => {
     const result = await checkPathsAccess(
       mockSettings,
       detector,
-      ["/project/file"],
+      [joinPaths(mockCtx.cwd, "file")],
       resolvedDirs,
       mockCtx,
     );
@@ -53,23 +65,45 @@ describe("checkPathsAccess", () => {
     const result = await checkPathsAccess(
       mockSettings,
       detector,
-      ["/nonexistent/path"],
+      [childOf("path")],
       resolvedDirs,
       mockCtx,
     );
     expect(result).toEqual({ block: false, sessionBypassed: [] });
   });
 
+  it.runIf(process.platform === "win32")(
+    "terminates at the drive root when no ancestor exists (Windows)",
+    async () => {
+      // Regression: the walk-up loop used a hardcoded "/" sentinel, which
+      // never matched a Windows drive root ("C:/"), so with pathExists
+      // always false this would hang forever instead of returning null.
+      vi.spyOn(detector, "isPathAllowed").mockReturnValue(false);
+      vi.spyOn(detector, "pathExists").mockResolvedValue(false);
+
+      const result = await checkPathsAccess(
+        mockSettings,
+        detector,
+        ["C:\\nonexistent\\deep\\file.txt"],
+        resolvedDirs,
+        mockCtx,
+      );
+      expect(result).toEqual({ block: false, sessionBypassed: [] });
+    },
+  );
+
   it("existing parent prompts for the parent", async () => {
     vi.spyOn(detector, "isPathAllowed").mockReturnValue(false);
+    // Only the missing dir itself exists; normalize the walked-up path
+    // since dirname() may mix separators on Win32.
     vi.spyOn(detector, "pathExists").mockImplementation(async (path: string) =>
-      path === "/nonexistent" ? true : false,
+      normalizePath(path) === missingDir ? true : false,
     );
 
     const result = await checkPathsAccess(
       mockSettings,
       detector,
-      ["/nonexistent/path"],
+      [childOf("path")],
       resolvedDirs,
       mockCtx,
     );
@@ -84,7 +118,7 @@ describe("checkPathsAccess", () => {
     const result = await checkPathsAccess(
       mockSettings,
       detector,
-      ["/etc/shadow"],
+      [childOf("shadow")],
       resolvedDirs,
       mockCtx,
     );
@@ -99,7 +133,7 @@ describe("checkPathsAccess", () => {
     const result = await checkPathsAccess(
       mockSettings,
       detector,
-      ["/a", "/a", "/b"],
+      [childOfRoot("a"), childOfRoot("a"), childOfRoot("b")],
       resolvedDirs,
       mockCtx,
     );
@@ -111,14 +145,14 @@ describe("checkPathsAccess", () => {
   it("deduplicates deepest existing parents", async () => {
     vi.spyOn(detector, "isPathAllowed").mockReturnValue(false);
     vi.spyOn(detector, "pathExists").mockImplementation(async (path: string) =>
-      path === "/nonexistent" ? true : false,
+      normalizePath(path) === missingDir ? true : false,
     );
 
     // Three different paths all resolve to the same deepest parent
     const result = await checkPathsAccess(
       mockSettings,
       detector,
-      ["/nonexistent/a", "/nonexistent/b", "/nonexistent/c"],
+      [childOf("a"), childOf("b"), childOf("c")],
       resolvedDirs,
       mockCtx,
     );
@@ -130,15 +164,17 @@ describe("checkPathsAccess", () => {
   it("skips prompting when deepest parent is already session-bypassed", async () => {
     vi.spyOn(detector, "isPathAllowed").mockReturnValue(false);
     vi.spyOn(detector, "pathExists").mockImplementation(async (path: string) =>
-      path === "/nonexistent" ? true : false,
+      normalizePath(path) === missingDir ? true : false,
     );
 
-    const sessionBypassed = new Set<string>(["/nonexistent"]);
+    // checkPathsAccess compares against the resolvePaths-normalized form
+    // of the deepest parent, so the bypass set must use the same form.
+    const sessionBypassed = new Set<string>([missingDir]);
 
     const result = await checkPathsAccess(
       mockSettings,
       detector,
-      ["/nonexistent/a"],
+      [childOf("a")],
       resolvedDirs,
       mockCtx,
       sessionBypassed,
