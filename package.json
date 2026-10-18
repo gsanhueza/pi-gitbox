@@ -8,6 +8,9 @@
     "pi-package",
     "pi-extension"
   ],
+  "files": [
+    "src/**"
+  ],
   "author": "Gabriel Sanhueza",
   "license": "MIT",
   "repository": {
@@ -20,7 +23,7 @@
   },
   "pi": {
     "extensions": [
-      "./index.ts"
+      "./src/index.ts"
     ]
   },
   "scripts": {

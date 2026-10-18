@@ -7,14 +7,14 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import { execSync } from "child_process";
 import { join } from "node:path";
-import { GitboxCommand } from "./src/commands/gitbox-command";
-import { PathsReport } from "./src/commands/paths-report";
-import { SettingsMenuController } from "./src/commands/settings-controller";
-import { Detector } from "./src/core/detector";
-import { ToolCallProcessor } from "./src/core/tool-call-processor";
-import { Gitbox } from "./src/gitbox";
-import { Impersonator } from "./src/core/impersonator/impersonator";
-import { Settings } from "./src/settings";
+import { GitboxCommand } from "./commands/gitbox-command";
+import { PathsReport } from "./commands/paths-report";
+import { SettingsMenuController } from "./commands/settings-controller";
+import { Detector } from "./core/detector";
+import { ToolCallProcessor } from "./core/tool-call-processor";
+import { Gitbox } from "./gitbox";
+import { Impersonator } from "./core/impersonator/impersonator";
+import { Settings } from "./settings";
 
 export default async (pi: ExtensionAPI) => {
   const settings = new Settings(join(getAgentDir(), "settings.json"));
