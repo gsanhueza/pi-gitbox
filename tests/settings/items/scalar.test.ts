@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from "vitest";
-import type { GitboxConfig } from "../src/config/types";
-import { ScalarSettingsItem } from "../src/settings/items/scalar";
+import type { GitboxConfig } from "../../../src/config/types";
+import { ScalarSettingsItem } from "../../../src/settings/items/scalar";
 
 /**
  * Concrete implementations for each scalar mode.

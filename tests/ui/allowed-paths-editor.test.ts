@@ -3,9 +3,9 @@ import {
   getSettingsListTheme,
   initTheme,
 } from "@earendil-works/pi-coding-agent";
-import { ResettableSettingsList } from "../src/ui/resettable-settings-list";
+import { ResettableSettingsList } from "../../src/ui/resettable-settings-list";
 import type { TUI } from "@earendil-works/pi-tui";
-import { AllowedPathsEditor } from "../src/ui/allowed-paths-editor";
+import { AllowedPathsEditor } from "../../src/ui/allowed-paths-editor";
 
 initTheme({} as never);
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PathMapper } from "../src/core/impersonator/path-mapper";
+import { PathMapper } from "../../../src/core/impersonator/path-mapper";
 
 describe("PathMapper", () => {
   describe("pathMapper", () => {

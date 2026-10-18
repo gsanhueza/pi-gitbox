@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from "vitest";
-import { AllowedPathsSettingsItem } from "../src/settings/items/allowed-paths";
-import type { GitboxConfig } from "../src/config/types";
+import { AllowedPathsSettingsItem } from "../../../src/settings/items/allowed-paths";
+import type { GitboxConfig } from "../../../src/config/types";
 
 describe("AllowedPathsSettingsItem", () => {
   let item: AllowedPathsSettingsItem;

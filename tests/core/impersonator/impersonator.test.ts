@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { Impersonator } from "../src/core/impersonator/impersonator";
-import { Detector } from "../src/core/detector";
-import { Settings } from "../src/settings";
+import { Impersonator } from "../../../src/core/impersonator/impersonator";
+import { Detector } from "../../../src/core/detector";
+import { Settings } from "../../../src/settings";
 
 vi.mock("node:fs/promises", () => ({
   mkdir: vi.fn(),
@@ -16,7 +16,7 @@ vi.mock("node:path", async (importOriginal) => {
   };
 });
 
-vi.mock("../src/utils/compat", () => ({
+vi.mock("../../../src/utils/compat", () => ({
   joinPaths: (...paths: string[]) => paths.join("/"),
   resolvePaths: (...paths: string[]) => {
     const baseIndex = paths.findIndex((p) => p.startsWith("/"));

@@ -5,7 +5,7 @@ vi.mock("node:child_process", () => ({
 }));
 
 import { execFile } from "node:child_process";
-import { sendNotification } from "../src/utils/notifications";
+import { sendNotification } from "../../src/utils/notifications";
 
 describe("sendNotification", () => {
   beforeEach(() => {

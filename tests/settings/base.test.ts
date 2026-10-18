@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { SettingsItem } from "../src/settings/base";
-import type { GitboxConfig } from "../src/config/types";
+import { SettingsItem } from "../../src/settings/base";
+import type { GitboxConfig } from "../../src/config/types";
 
 /**
  * Minimal concrete implementation of SettingsItem for testing.

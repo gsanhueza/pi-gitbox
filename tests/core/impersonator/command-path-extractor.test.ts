@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CommandPathExtractor } from "../src/core/impersonator/command-path-extractor";
+import { CommandPathExtractor } from "../../../src/core/impersonator/command-path-extractor";
 
 describe("CommandPathExtractor", () => {
   const extractor = new CommandPathExtractor();

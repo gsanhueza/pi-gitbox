@@ -8,7 +8,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Detector } from "../src/core/detector";
+import { Detector } from "../../src/core/detector";
 
 describe("Detector.execSync methods", () => {
   it("isGitAvailable returns true when execSync succeeds", () => {
@@ -149,7 +149,7 @@ describe("Detector.pathExists", () => {
       lstat: vi.fn().mockRejectedValue({ code: "EACCES" }),
     }));
     vi.resetModules();
-    const { Detector: D } = await import("../src/core/detector");
+    const { Detector: D } = await import("../../src/core/detector");
     const testDetector = new D();
     expect(await testDetector.pathExists("/some/protected/path")).toBe(true);
   });
@@ -159,7 +159,7 @@ describe("Detector.pathExists", () => {
       lstat: vi.fn().mockRejectedValue({ code: "EPERM" }),
     }));
     vi.resetModules();
-    const { Detector: D } = await import("../src/core/detector");
+    const { Detector: D } = await import("../../src/core/detector");
     const testDetector = new D();
     expect(await testDetector.pathExists("/some/blocked/path")).toBe(true);
   });

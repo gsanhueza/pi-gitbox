@@ -3,7 +3,7 @@ import { writeFile } from "node:fs/promises";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Settings } from "../src/settings";
+import { Settings } from "../../src/settings";
 
 let tmpDir: string;
 

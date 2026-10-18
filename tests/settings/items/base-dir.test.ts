@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach } from "vitest";
-import { BaseDirSettingsItem } from "../src/settings/items/base-dir";
-import { GITBOX_BASEDIR, TEMPORAL_GITBOX } from "../src/config/defaults";
-import type { GitboxConfig } from "../src/config/types";
+import { BaseDirSettingsItem } from "../../../src/settings/items/base-dir";
+import { GITBOX_BASEDIR, TEMPORAL_GITBOX } from "../../../src/config/defaults";
+import type { GitboxConfig } from "../../../src/config/types";
 
 describe("BaseDirSettingsItem", () => {
   let item: BaseDirSettingsItem;
