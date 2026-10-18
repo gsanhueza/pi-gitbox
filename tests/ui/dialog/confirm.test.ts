@@ -1,13 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { ConfirmDialog } from "../../../src/ui/dialog/confirm";
-import type { TUI } from "@earendil-works/pi-tui";
+import { createMockTUI, createMockTheme } from "../../mocks/tui";
 
-const tui = { requestRender: vi.fn() } as unknown as TUI;
-
-const theme = {
-  fg: (_color: string, text: string) => text,
-  bold: (text: string) => text,
-} as never;
+const tui = createMockTUI();
+const theme = createMockTheme();
 
 describe("ConfirmDialog", () => {
   it("renders both confirm and cancel options", () => {

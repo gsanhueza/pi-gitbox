@@ -4,12 +4,12 @@ import {
   initTheme,
 } from "@earendil-works/pi-coding-agent";
 import { ResettableSettingsList } from "../../src/ui/resettable-settings-list";
-import type { TUI } from "@earendil-works/pi-tui";
 import { AllowedPathsEditor } from "../../src/ui/allowed-paths-editor";
+import { createMockTUI } from "../mocks/tui";
 
 initTheme({} as never);
 
-const tui = { requestRender: vi.fn() } as unknown as TUI;
+const tui = createMockTUI();
 
 function strip(line: string): string {
   // eslint-disable-next-line no-control-regex

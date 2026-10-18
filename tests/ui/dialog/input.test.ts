@@ -1,13 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { InputDialog } from "../../../src/ui/dialog/input";
-import type { TUI } from "@earendil-works/pi-tui";
+import { createMockTUI, createMockTheme } from "../../mocks/tui";
 
-const tui = { requestRender: vi.fn() } as unknown as TUI;
-
-const theme = {
-  fg: (_color: string, text: string) => text,
-  bold: (text: string) => text,
-} as never;
+const tui = createMockTUI();
+const theme = createMockTheme();
 
 describe("InputDialog", () => {
   it("renders with the initial value and placeholder", () => {

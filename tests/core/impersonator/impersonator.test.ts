@@ -8,14 +8,6 @@ vi.mock("node:fs/promises", () => ({
   writeFile: vi.fn(),
 }));
 
-vi.mock("node:path", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("node:path")>();
-  return {
-    ...actual,
-    basename: vi.fn((p: string) => p.split("/").filter(Boolean).pop() ?? ""),
-  };
-});
-
 vi.mock("../../../src/utils/compat", () => ({
   joinPaths: (...paths: string[]) => paths.join("/"),
   resolvePaths: (...paths: string[]) => {

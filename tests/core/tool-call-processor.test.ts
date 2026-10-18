@@ -5,6 +5,7 @@ import { Impersonator } from "../../src/core/impersonator/impersonator";
 import { ToolCallProcessor } from "../../src/core/tool-call-processor";
 import { checkPathsAccess } from "../../src/path-access";
 import { Settings } from "../../src/settings";
+import { createMockPathAccess } from "../../mocks/path-access";
 
 vi.mock("../../src/path-access", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../src/path-access")>();

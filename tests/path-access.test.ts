@@ -3,7 +3,6 @@ import { Detector } from "../src/core/detector";
 import { checkPathsAccess } from "../src/path-access";
 import { Settings } from "../src/settings";
 
-// Mock askUserOrBlock
 vi.mock("../src/path-access", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../src/path-access")>();
   return {

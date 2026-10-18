@@ -8,16 +8,6 @@ vi.mock("node:fs/promises", () => ({
   writeFile: vi.fn(),
 }));
 
-vi.mock("node:path", () => ({
-  ...vi.importActual("node:path"),
-  dirname: vi.fn((p: string) => {
-    const parts = p.split("/").filter(Boolean);
-    if (parts.length <= 1) return "/";
-    const isAbs = p.startsWith("/");
-    return (isAbs ? "/" : "") + parts.slice(0, -1).join("/");
-  }),
-}));
-
 vi.mock("../../../src/utils/compat", () => ({
   resolvePaths: (...paths: string[]) => {
     const baseIndex = paths.findIndex((p) => p.startsWith("/"));
